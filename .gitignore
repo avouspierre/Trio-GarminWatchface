@@ -55,4 +55,5 @@ dkms.conf
 bin/
 .vscode
 .DS_Store
+**/.DS_Store
 developer_key
