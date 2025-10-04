@@ -52,8 +52,35 @@ Mkfile.old
 dkms.conf
 
 # Garmin Monkey 
-bin/
 .vscode
-.DS_Store
 **/.DS_Store
 developer_key
+
+# Connect IQ build artifacts
+bin/
+*.prg
+*.iq
+*.prg.debug.xml
+
+# IDE specific files
+.vscode/settings.json
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*~
+*.swp
+
+# Connect IQ logs and temp files
+*.fit
+logs/
+temp/
+
+# Local developer configuration
+ConfigOverride.local
+create-build-system.sh
