@@ -51,11 +51,11 @@ class TrioWatchfaceApp extends Application.AppBase {
             "glucose" => "188",
             "lastLoopDateInterval" => lastLoopDateInterval,
             "delta" => "-20",
-            "iob" => "1.4",
+            "iob" => "-0.1",
             "cob" => "70.2",
             "isf" => "66.1",
-            "sensRatio" => "0.6",
-            "eventualBGRaw" => "70",
+            "sensRatio" => "0.65",
+            "eventualBGRaw" => "144",
             "trendRaw" => "FortyFiveDown"
         } as Dictionary;
 

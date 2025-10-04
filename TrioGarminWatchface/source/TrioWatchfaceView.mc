@@ -1,3 +1,4 @@
+//**********************************************************************
 // DESCRIPTION : Watch Faces for Trio
 // AUTHORS :
 //          Created by ivalkou - https://github.com/ivalkou
@@ -42,16 +43,131 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         setHeartRate();
         setSteps();
         
-        // Set values and then dynamically position middle section
+        // Set values
         setIOB(status);
-        setCOBorSensRatio(status);  // Handle either COB or sensRatio
+        // Don't set COB text - we'll draw it manually
         setEventualBG(status);
         
-        // Now dynamically adjust positions based on actual text widths
-        adjustMiddleSectionPositions(dc, status);
+        // Hide the COB label by setting it to empty
+        var cobLabel = View.findDrawableById("COBLabel") as Text;
+        if (cobLabel != null) {
+            cobLabel.setText("");
+        }
         
         // Call the parent onUpdate function to redraw the layout
         View.onUpdate(dc);
+        
+        // NOW manually draw the middle section text and position icons
+        drawMiddleSection(dc, status);
+    }
+    
+    function drawMiddleSection(dc as Dc, status) as Void {
+        var screenWidth = dc.getWidth();
+        var screenHeight = dc.getHeight();
+        
+        // Get font height to adjust icon positioning
+        var fontHeight = dc.getFontHeight(Graphics.FONT_MEDIUM);
+        var textY = screenHeight * 0.5;
+        var iconY = textY - (fontHeight * 0.3);
+        
+        // Get the icons
+        var isfIcon = View.findDrawableById("ISFIcon") as Bitmap;
+        var eventualIcon = View.findDrawableById("EventualIcon") as Bitmap;
+        
+        // Get actual text values
+        var iobString = getIOBString(status);
+        var eventualString = getEventualBGString(status);
+        
+        // Determine middle string (COB or sensRatio)
+        var middleString = "";
+        var showingSensRatio = false;
+        
+        if (status instanceof Dictionary) {
+            var sensRatio = status["sensRatio"];
+            var cob = status["cob"];
+            
+            if (sensRatio != null) {
+                middleString = getSensRatioString(status);
+                showingSensRatio = true;
+            } else if (cob != null) {
+                middleString = getCOBString(status);
+                showingSensRatio = false;
+            } else {
+                middleString = "--";
+            }
+        }
+        
+        // Calculate text widths
+        var iobWidth = dc.getTextWidthInPixels(iobString, Graphics.FONT_MEDIUM);
+        var middleWidth = dc.getTextWidthInPixels(middleString, Graphics.FONT_MEDIUM);
+        var eventualWidth = dc.getTextWidthInPixels(eventualString, Graphics.FONT_MEDIUM);
+        
+        // Calculate positions with 2% margins instead of 5%
+        var iconSpacing = screenWidth * 0.02;
+        var margin = screenWidth * 0.02; // Reduced from 0.05 to 0.02
+        
+        var iobLeftEdge = margin; // 2% from left edge
+        var iobRightEdge = iobLeftEdge + iobWidth;
+        
+        var eventualRightEdge = screenWidth - margin; // 2% from right edge (98% position)
+        var eventualIconWidth = screenWidth * 0.06;
+        var eventualIconLeftEdge = eventualRightEdge - eventualWidth - iconSpacing - eventualIconWidth;
+        
+        // Position eventual icon
+        if (eventualIcon != null) {
+            eventualIcon.locX = eventualIconLeftEdge;
+            eventualIcon.locY = iconY;
+        }
+        
+        // Calculate center of available space
+        var availableCenter = (iobRightEdge + eventualIconLeftEdge) / 2;
+        
+        // Position ISF icon and draw middle text manually
+        var isfIconWidth = screenWidth * 0.08;
+        
+        if (showingSensRatio) {
+            // For sensRatio: icon + text should be centered as a unit
+            // Calculate total width of icon + spacing + text
+            var totalUnitWidth = isfIconWidth + iconSpacing + middleWidth;
+            
+            // Position icon at the start of the centered unit
+            if (isfIcon != null) {
+                isfIcon.locX = availableCenter - (totalUnitWidth / 2);
+                isfIcon.locY = iconY;
+            }
+            
+            // Text position is after icon + spacing
+            var textX = availableCenter - (totalUnitWidth / 2) + isfIconWidth + iconSpacing + (middleWidth / 2);
+            
+            // Manually draw the middle text at the calculated position
+            dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(
+                textX,
+                textY,
+                Graphics.FONT_MEDIUM,
+                middleString,
+                Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
+            );
+        } else {
+            // For COB: same approach - icon + text centered as a unit
+            var totalUnitWidth = isfIconWidth + iconSpacing + middleWidth;
+            
+            if (isfIcon != null) {
+                isfIcon.locX = availableCenter - (totalUnitWidth / 2);
+                isfIcon.locY = iconY;
+            }
+            
+            var textX = availableCenter - (totalUnitWidth / 2) + isfIconWidth + iconSpacing + (middleWidth / 2);
+            
+            dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(
+                textX,
+                textY,
+                Graphics.FONT_MEDIUM,
+                middleString,
+                Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
+            );
+        }
     }
 
     function setCOBorSensRatio(status) as Void {
@@ -129,46 +245,66 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var iconSpacing = screenWidth * 0.02; // 2% space between icon and text
         
         // Position IOB (left-aligned at 5% margin)
+        var iobLeftEdge = screenWidth * 0.05;
         if (iobLabel != null) {
-            iobLabel.locX = screenWidth * 0.05; // Left edge at 5% (since it's left-justified)
+            iobLabel.locX = iobLeftEdge; // Left edge at 5% (since it's left-justified)
+        }
+        var iobRightEdge = iobLeftEdge + iobWidth;
+        
+        // Position Eventual BG first to know its icon position
+        var eventualRightEdge = screenWidth * 0.95;
+        var eventualIconWidth = screenWidth * 0.06; // 6% as defined in layout.xml
+        var eventualIconLeftEdge = eventualRightEdge - eventualWidth - iconSpacing - eventualIconWidth;
+        
+        if (eventualLabel != null && eventualIcon != null) {
+            // Right-align the text at 95% of screen width
+            eventualLabel.locX = eventualRightEdge; // Right edge at 95% (since it's right-justified)
+            
+            // Position icon to the left of eventual BG text
+            eventualIcon.locX = eventualIconLeftEdge;
+            eventualIcon.locY = iconY; // Adjusted up by half font height
         }
         
-        // Position middle element (COB or sensRatio) at center
+        // Now position middle element (COB or sensRatio) centered in the available space
+        // Available space is between IOB right edge and eventual BG icon left edge
+        var availableCenter = (iobRightEdge + eventualIconLeftEdge) / 2;
+        
+        // Debug: Let's verify the calculation
+        System.println("IOB right edge: " + iobRightEdge);
+        System.println("Eventual icon left edge: " + eventualIconLeftEdge);
+        System.println("Available center: " + availableCenter);
+        System.println("Screen center: " + (screenWidth / 2));
+        
         if (cobLabel != null) {
+            // Set position FIRST, before setText
+            cobLabel.locX = availableCenter; // This should move it from screen center
+            
+            // Then set the text
             cobLabel.setText(middleString); // Update text to either COB or sensRatio
             
             if (showingSensRatio) {
-                // For sensRatio: center position with icon to its left
-                cobLabel.locX = screenWidth / 2; // Center (since it's center-justified)
+                // For sensRatio: center position in available space with icon to its left
+                cobLabel.locX = availableCenter; // Center in available space
                 
                 // Position icon to the left of sensRatio text
                 if (isfIcon != null) {
-                    isfIcon.locX = (screenWidth / 2) - (middleWidth / 2) - iconSpacing - (screenWidth * 0.06);
+                    var isfIconWidth = screenWidth * 0.08; // 8% as defined in layout.xml
+                    isfIcon.locX = availableCenter - (middleWidth / 2) - iconSpacing - isfIconWidth;
                     isfIcon.locY = iconY; // Adjusted up by half font height
                 }
                 
             } else {
-                // For COB: icon on left, text on right, both centered
+                // For COB: icon on left, text on right, both centered in available space
                 if (isfIcon != null) {
-                    var iconWidth = screenWidth * 0.06;
+                    var iconWidth = screenWidth * 0.08; // 8% as defined in layout.xml
                     var totalWidth = iconWidth + iconSpacing + middleWidth;
-                    var startX = (screenWidth - totalWidth) / 2;
+                    var startX = availableCenter - (totalWidth / 2);
                     
                     isfIcon.locX = startX;
                     isfIcon.locY = iconY; // Adjusted up by half font height
-                    cobLabel.locX = screenWidth / 2; // Keep centered
+                    cobLabel.locX = availableCenter; // Center in available space
                 }
             }
-        }
-        
-        // Position Eventual BG (right-aligned at 95% like aiSR in datafield)
-        if (eventualLabel != null && eventualIcon != null) {
-            // Right-align the text at 95% of screen width
-            eventualLabel.locX = screenWidth * 0.95; // Right edge at 95% (since it's right-justified)
-            
-            // Position icon to the left of eventual BG text
-            eventualIcon.locX = (screenWidth * 0.95) - eventualWidth - iconSpacing - (screenWidth * 0.05);
-            eventualIcon.locY = iconY; // Adjusted up by half font height
         }
     }
     
