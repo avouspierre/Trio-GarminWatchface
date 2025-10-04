@@ -54,7 +54,7 @@ class TrioWatchfaceApp extends Application.AppBase {
             "iob" => "-0.1",
             "cob" => "70.2",
             "isf" => "66.1",
-            "sensRatio" => "0.65",
+            //"sensRatio" => "0.65",
             "eventualBGRaw" => "144",
             "trendRaw" => "FortyFiveDown"
         } as Dictionary;

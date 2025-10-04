@@ -149,19 +149,16 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
             );
         } else {
-            // For COB: same approach - icon + text centered as a unit
-            var totalUnitWidth = isfIconWidth + iconSpacing + middleWidth;
-            
+            // For COB: no icon, yellow text, centered directly
+            // Hide the ISF icon
             if (isfIcon != null) {
-                isfIcon.locX = availableCenter - (totalUnitWidth / 2);
-                isfIcon.locY = iconY;
+                isfIcon.locX = -100; // Move off screen to hide it
             }
             
-            var textX = availableCenter - (totalUnitWidth / 2) + isfIconWidth + iconSpacing + (middleWidth / 2);
-            
-            dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_TRANSPARENT);
+            // Draw COB text in yellow at the available center
+            dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
             dc.drawText(
-                textX,
+                availableCenter,
                 textY,
                 Graphics.FONT_MEDIUM,
                 middleString,
