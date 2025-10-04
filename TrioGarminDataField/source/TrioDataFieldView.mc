@@ -148,7 +148,7 @@ class TrioDataFieldView extends WatchUi.DataField {
         if (getBackgroundColor() == Graphics.COLOR_BLACK) {
             // Black background - use light/bright colors
             if (bgLabel != null) {
-                bgLabel.setColor(Graphics.COLOR_GREEN);  // Bright green matching aiSRDark
+                bgLabel.setColor(Graphics.COLOR_GREEN);  // Bright green matching SensRatioDark
             }
             value.setColor(Graphics.COLOR_WHITE);
             valueTime.setColor(Graphics.COLOR_WHITE);
@@ -159,7 +159,7 @@ class TrioDataFieldView extends WatchUi.DataField {
         } else {
             // White background - use dark colors
             if (bgLabel != null) {
-                bgLabel.setColor(Graphics.COLOR_DK_GREEN);  // Dark green matching aiSRLight (008000)
+                bgLabel.setColor(Graphics.COLOR_DK_GREEN);  // Dark green matching SensRatioLight (008000)
             }
             value.setColor(Graphics.COLOR_BLACK);
             valueTime.setColor(Graphics.COLOR_BLACK);
@@ -184,7 +184,7 @@ class TrioDataFieldView extends WatchUi.DataField {
         if (getBackgroundColor() == Graphics.COLOR_BLACK) {
             arrowView.setBitmap(getDirection(status));
             if (sensRatioIconView != null) {
-                sensRatioIconView.setBitmap(WatchUi.loadResource(Rez.Drawables.aiSRDark));
+                sensRatioIconView.setBitmap(WatchUi.loadResource(Rez.Drawables.SensRatioDark));
             }
             if (iobIconView != null) {
                 iobIconView.setBitmap(WatchUi.loadResource(Rez.Drawables.iobLight));
@@ -193,7 +193,7 @@ class TrioDataFieldView extends WatchUi.DataField {
         else {
             arrowView.setBitmap(getDirectionBlack(status));
             if (sensRatioIconView != null) {
-                sensRatioIconView.setBitmap(WatchUi.loadResource(Rez.Drawables.aiSRLight));
+                sensRatioIconView.setBitmap(WatchUi.loadResource(Rez.Drawables.SensRatioLight));
             }
             if (iobIconView != null) {
                 iobIconView.setBitmap(WatchUi.loadResource(Rez.Drawables.iobDark));
