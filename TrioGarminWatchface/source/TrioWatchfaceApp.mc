@@ -54,25 +54,25 @@ class TrioWatchfaceApp extends Application.AppBase {
             "iob" => "2.4",
             "cob" => "70.2",
             "isf" => "66.1",
-            "aiSR" => "1.63",
+            "sensRatio" => "1.63",
             "eventualBGRaw" => "166",
             "trendRaw" => "FortyFiveDown"
         } as Dictionary;
 
         var mmollsampleData = {
-            "glucose" => "10,9",
+            "glucose" => "10.9",
             "lastLoopDateInterval" => lastLoopDateInterval,
             "delta" => "-2.3",
             "iob" => "2.9",
             "cob" => "70.2",
             "isf" => "3.7",
-            "aiSR" => "1.63",
+            "sensRatio" => "1.63",
             "eventualBGRaw" => "9.9",
             "trendRaw" => "FortyFiveDown"
         } as Dictionary;
 
         // Store the sample data
-        //Application.Storage.setValue("status", mmollsampleData);
+        //Application.Storage.setValue("status", sampleData);
     }
 
     function onBackgroundData(data) {

@@ -136,7 +136,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
 
         if (status instanceof Dictionary)  {
             //var cob = status["cob"];
-            var cob = status["aiSR"];       // to show aiSR instead of COB
+            var cob = status["sensRatio"];       // to show sensRatio instead of COB
             var cobString;
             if (cob instanceof Number) {
               //cobString = (cob == null) ? "--" : cob.format("%3d") + "g";

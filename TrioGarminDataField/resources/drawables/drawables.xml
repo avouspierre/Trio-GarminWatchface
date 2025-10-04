@@ -1,7 +1,7 @@
 <drawables>
     <bitmap id="LauncherIcon" filename="launcher_40_40.png" />
 
-    <!-- aiSR icons -->
+    <!-- sensRatio icons -->
     <bitmap id="aiSRDark" x="center" y="center" filename="UpDown.svg" scaleX="6%" scaleY="6%" scaleRelativeTo="screen">
         <palette>
             <color>00FF00</color>  <!-- Light green for dark backgrounds -->
