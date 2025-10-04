@@ -1,4 +1,3 @@
-//**********************************************************************
 // DESCRIPTION : Watch Faces for Trio
 // AUTHORS :
 //          Created by ivalkou - https://github.com/ivalkou
@@ -45,7 +44,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         
         // Set values and then dynamically position middle section
         setIOB(status);
-        setCOBorAiSR(status);  // Handle either COB or aiSR
+        setCOBorSensRatio(status);  // Handle either COB or sensRatio
         setEventualBG(status);
         
         // Now dynamically adjust positions based on actual text widths
@@ -55,21 +54,21 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         View.onUpdate(dc);
     }
 
-    function setCOBorAiSR(status) as Void {
+    function setCOBorSensRatio(status) as Void {
         var view = View.findDrawableById("COBLabel") as Text;
         
         if (status instanceof Dictionary) {
-            var aiSR = status["aiSR"];
-            var cob = status["sensRatio"];
+            var sensRatio = status["sensRatio"];
+            var cob = status["cob"];
             
-            // Priority to aiSR if both exist
-            if (aiSR != null) {
-                view.setText(getAiSRString(status));
-                // Could update color here for aiSR if desired
+            // Priority to sensRatio if both exist
+            if (sensRatio != null) {
+                view.setText(getSensRatioString(status));
+                // Could update color here for sensRatio if desired
                 // view.setColor(Graphics.COLOR_GREEN);
             } else if (cob != null) {
                 view.setText(getCOBString(status));
-                // view.setColor(Graphics.COLOR_GREEN);
+                // view.setColor(Graphics.COLOR_YELLOW);
             } else {
                 view.setText("--");
             }
@@ -80,13 +79,22 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
 
     function adjustMiddleSectionPositions(dc as Dc, status) as Void {
         var screenWidth = dc.getWidth();
+        var screenHeight = dc.getHeight();
         
-        // Get the views
+        // Get font height to adjust icon positioning
+        var fontHeight = dc.getFontHeight(Graphics.FONT_MEDIUM);
+        
+        // Text is at 50% height, but icons need to be adjusted up by half font height
+        // to align their centers with the text baseline
+        var textY = screenHeight * 0.5;
+        var iconY = textY - (fontHeight * 0.3);
+        
+        // Get the views - cast icons as Bitmap
         var iobLabel = View.findDrawableById("IOBLabel");
         var cobLabel = View.findDrawableById("COBLabel"); // This label shows either COB or sensRatio
-        var isfIcon = View.findDrawableById("ISF");
+        var isfIcon = View.findDrawableById("ISFIcon") as Bitmap;
         var eventualLabel = View.findDrawableById("EventualBGLabel");
-        var eventualIcon = View.findDrawableById("Eventual");
+        var eventualIcon = View.findDrawableById("EventualIcon") as Bitmap;
         
         // Get actual text values
         var iobString = getIOBString(status);
@@ -135,16 +143,19 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
                 
                 // Position icon to the left of sensRatio text
                 if (isfIcon != null) {
-                    isfIcon.locX = (screenWidth / 2) - (middleWidth / 2) - iconSpacing - (screenWidth * 0.03);
+                    isfIcon.locX = (screenWidth / 2) - (middleWidth / 2) - iconSpacing - (screenWidth * 0.06);
+                    isfIcon.locY = iconY; // Adjusted up by half font height
                 }
                 
             } else {
                 // For COB: icon on left, text on right, both centered
                 if (isfIcon != null) {
-                    var totalWidth = (screenWidth * 0.03) + iconSpacing + middleWidth;
+                    var iconWidth = screenWidth * 0.06;
+                    var totalWidth = iconWidth + iconSpacing + middleWidth;
                     var startX = (screenWidth - totalWidth) / 2;
                     
                     isfIcon.locX = startX;
+                    isfIcon.locY = iconY; // Adjusted up by half font height
                     cobLabel.locX = screenWidth / 2; // Keep centered
                 }
             }
@@ -156,7 +167,8 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
             eventualLabel.locX = screenWidth * 0.95; // Right edge at 95% (since it's right-justified)
             
             // Position icon to the left of eventual BG text
-            eventualIcon.locX = (screenWidth * 0.95) - eventualWidth - iconSpacing - (screenWidth * 0.03);
+            eventualIcon.locX = (screenWidth * 0.95) - eventualWidth - iconSpacing - (screenWidth * 0.05);
+            eventualIcon.locY = iconY; // Adjusted up by half font height
         }
     }
     
@@ -206,23 +218,6 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
             }
         }
         return "--";
-    }
-    
-    function getAiSRString(status) as String {
-        if (status instanceof Dictionary) {
-            var aiSR = status["aiSR"];
-            if (aiSR != null) {
-                return aiSR.toString();
-            }
-        }
-        return "--";
-    }
-    
-    function setAiSR(status) as Void {
-        var view = View.findDrawableById("AiSRLabel") as Text;
-        if (view != null) {
-            view.setText(getAiSRString(status));
-        }
     }
 
     function setTime() as Void {
