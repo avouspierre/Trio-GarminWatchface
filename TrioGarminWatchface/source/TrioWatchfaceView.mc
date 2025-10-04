@@ -42,11 +42,187 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         setDate();
         setHeartRate();
         setSteps();
+        
+        // Set values and then dynamically position middle section
         setIOB(status);
-        setCOB(status);
+        setCOBorAiSR(status);  // Handle either COB or aiSR
         setEventualBG(status);
+        
+        // Now dynamically adjust positions based on actual text widths
+        adjustMiddleSectionPositions(dc, status);
+        
         // Call the parent onUpdate function to redraw the layout
         View.onUpdate(dc);
+    }
+
+    function setCOBorAiSR(status) as Void {
+        var view = View.findDrawableById("COBLabel") as Text;
+        
+        if (status instanceof Dictionary) {
+            var aiSR = status["aiSR"];
+            var cob = status["sensRatio"];
+            
+            // Priority to aiSR if both exist
+            if (aiSR != null) {
+                view.setText(getAiSRString(status));
+                // Could update color here for aiSR if desired
+                // view.setColor(Graphics.COLOR_GREEN);
+            } else if (cob != null) {
+                view.setText(getCOBString(status));
+                // view.setColor(Graphics.COLOR_GREEN);
+            } else {
+                view.setText("--");
+            }
+        } else {
+            view.setText("--");
+        }
+    }
+
+    function adjustMiddleSectionPositions(dc as Dc, status) as Void {
+        var screenWidth = dc.getWidth();
+        
+        // Get the views
+        var iobLabel = View.findDrawableById("IOBLabel");
+        var cobLabel = View.findDrawableById("COBLabel"); // This label shows either COB or sensRatio
+        var isfIcon = View.findDrawableById("ISF");
+        var eventualLabel = View.findDrawableById("EventualBGLabel");
+        var eventualIcon = View.findDrawableById("Eventual");
+        
+        // Get actual text values
+        var iobString = getIOBString(status);
+        var eventualString = getEventualBGString(status);
+        
+        // Determine if we're showing COB or sensRatio
+        var middleString = "";
+        var showingSensRatio = false;
+        
+        if (status instanceof Dictionary) {
+            var sensRatio = status["sensRatio"];
+            var cob = status["cob"];
+            
+            // Priority to sensRatio if both exist, or show whichever is available
+            if (sensRatio != null) {
+                middleString = getSensRatioString(status);
+                showingSensRatio = true;
+            } else if (cob != null) {
+                middleString = getCOBString(status);
+                showingSensRatio = false;
+            } else {
+                middleString = "--";
+            }
+        }
+        
+        // Calculate text widths
+        var iobWidth = dc.getTextWidthInPixels(iobString, Graphics.FONT_MEDIUM);
+        var middleWidth = dc.getTextWidthInPixels(middleString, Graphics.FONT_MEDIUM);
+        var eventualWidth = dc.getTextWidthInPixels(eventualString, Graphics.FONT_MEDIUM);
+        
+        // Define spacing
+        var iconSpacing = screenWidth * 0.02; // 2% space between icon and text
+        
+        // Position IOB (left-aligned at 5% margin)
+        if (iobLabel != null) {
+            iobLabel.locX = screenWidth * 0.05; // Left edge at 5% (since it's left-justified)
+        }
+        
+        // Position middle element (COB or sensRatio) at center
+        if (cobLabel != null) {
+            cobLabel.setText(middleString); // Update text to either COB or sensRatio
+            
+            if (showingSensRatio) {
+                // For sensRatio: center position with icon to its left
+                cobLabel.locX = screenWidth / 2; // Center (since it's center-justified)
+                
+                // Position icon to the left of sensRatio text
+                if (isfIcon != null) {
+                    isfIcon.locX = (screenWidth / 2) - (middleWidth / 2) - iconSpacing - (screenWidth * 0.03);
+                }
+                
+            } else {
+                // For COB: icon on left, text on right, both centered
+                if (isfIcon != null) {
+                    var totalWidth = (screenWidth * 0.03) + iconSpacing + middleWidth;
+                    var startX = (screenWidth - totalWidth) / 2;
+                    
+                    isfIcon.locX = startX;
+                    cobLabel.locX = screenWidth / 2; // Keep centered
+                }
+            }
+        }
+        
+        // Position Eventual BG (right-aligned at 95% like aiSR in datafield)
+        if (eventualLabel != null && eventualIcon != null) {
+            // Right-align the text at 95% of screen width
+            eventualLabel.locX = screenWidth * 0.95; // Right edge at 95% (since it's right-justified)
+            
+            // Position icon to the left of eventual BG text
+            eventualIcon.locX = (screenWidth * 0.95) - eventualWidth - iconSpacing - (screenWidth * 0.03);
+        }
+    }
+    
+    function getIOBString(status) as String {
+        if (status instanceof Dictionary) {
+            var iob = status["iob"];
+            if (iob instanceof Number) {
+                return iob.format("%2.1f") + "U";
+            } else if (iob != null) {
+                return iob + "U";
+            }
+        }
+        return "--";
+    }
+    
+    function getCOBString(status) as String {
+        if (status instanceof Dictionary) {
+            var cob = status["cob"]; // actual COB value
+            if (cob instanceof Number) {
+                return cob.format("%3d") + "g";
+            } else if (cob != null) {
+                return cob.toString() + "g";
+            }
+        }
+        return "--";
+    }
+    
+    function getSensRatioString(status) as String {
+        if (status instanceof Dictionary) {
+            var sensRatio = status["sensRatio"]; // sensRatio value
+            if (sensRatio instanceof Number) {
+                return sensRatio.format("%2.1f");
+            } else if (sensRatio != null) {
+                return sensRatio.toString();
+            }
+        }
+        return "--";
+    }
+    
+    function getEventualBGString(status) as String {
+        if (status instanceof Dictionary) {
+            var ebg = status["eventualBGRaw"];
+            if (ebg instanceof Number) {
+                return ebg.format("%d");
+            } else if (ebg != null) {
+                return ebg.toString();
+            }
+        }
+        return "--";
+    }
+    
+    function getAiSRString(status) as String {
+        if (status instanceof Dictionary) {
+            var aiSR = status["aiSR"];
+            if (aiSR != null) {
+                return aiSR.toString();
+            }
+        }
+        return "--";
+    }
+    
+    function setAiSR(status) as Void {
+        var view = View.findDrawableById("AiSRLabel") as Text;
+        if (view != null) {
+            view.setText(getAiSRString(status));
+        }
     }
 
     function setTime() as Void {
@@ -113,64 +289,18 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
 
     function setIOB(status) as Void {
         var view = View.findDrawableById("IOBLabel") as Text;
-        var iobString;
-         if (status instanceof Dictionary)  {
-            var iob = status["iob"];
-            if (iob instanceof Number) {
-                iobString = (iob == null) ? "--" : iob.format("%2.1f") + "U";
-            } else {
-                iobString = (iob == null) ? "--" : iob + "U";
-            }
-
-            view.setText(iobString);
-            return;
-
-        } else {
-            view.setText("--");
-            return;
-        }
+        view.setText(getIOBString(status));
     }
 
     function setCOB(status) as Void {
         var view = View.findDrawableById("COBLabel") as Text;
-
-        if (status instanceof Dictionary)  {
-            //var cob = status["cob"];
-            var cob = status["sensRatio"];       // to show sensRatio instead of COB
-            var cobString;
-            if (cob instanceof Number) {
-              //cobString = (cob == null) ? "--" : cob.format("%3d") + "g";
-              cobString = (cob == null) ? "--" : cob.format("%2.1");
-            } else {
-              //cobString = (cob == null) ? "--" : cob + "g";
-              cobString = (cob == null) ? "--" : cob;
-            }
-            view.setText(cobString);
-            return;
-        } else {
-            view.setText("--");
-            return;
-        }
-
+        view.setText(getCOBString(status));
     }
 
     function setEventualBG(status) as Void {
         var view = View.findDrawableById("EventualBGLabel") as Text;
         view.setColor(getApp().getProperty("PrimaryColor") as Number);
-
-          if (status instanceof Dictionary)  {
-            var ebg = status["eventualBGRaw"];
-            if (ebg instanceof Number) {
-                ebg = ebg.format("%d");
-            }
-            var ebgString = (ebg == null) ? "--" : ebg;
-            view.setText(ebgString);
-            return;
-        } else {
-            view.setText("--");
-            return;
-        }
-
+        view.setText(getEventualBGString(status));
     }
 
     // Called when this View is removed from the screen. Save the
