@@ -179,9 +179,6 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var glucoseFont = Graphics.FONT_NUMBER_MILD;
         var secondaryFont = Graphics.FONT_TINY;
         
-        // Position at 15% from top (adjust as needed)
-        var baseY = screenHeight * 0.20;
-        
         // Get text values
         var glucoseText = getGlucoseText(status);
         var deltaText = getDeltaText(status);
@@ -197,8 +194,28 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var deltaWidth = dc.getTextWidthInPixels(deltaText, secondaryFont);
         var loopWidth = dc.getTextWidthInPixels(loopText, secondaryFont);
         
-        // Margins and spacing
-        var sideMargin = screenWidth * 0.06;
+        // Dynamic positioning and sizing based on screen size
+        var baseY;
+        var sideMargin;
+        var circleRadius;
+        var circlePenWidth;
+        
+        if (screenWidth <= 240) { // Fenix 5 and similar small screens
+            baseY = screenHeight * 0.25; // Lower position to avoid time overlap
+            sideMargin = screenWidth * 0.08; // More margin (8% vs 6%)
+            // Smaller, more visible loop indicator
+            circleRadius = glucoseHeight * 0.35; // Smaller circle (15% vs 20%)
+            circlePenWidth = Math.round(screenWidth * 0.005).toNumber(); // Thicker ring (2.5% vs 1.8%)
+            if (circlePenWidth < 4) { circlePenWidth = 4; } // Minimum 5px for visibility
+        } else { // Larger screens (Enduro 3, newer watches)
+            baseY = screenHeight * 0.2; // Position works fine for larger screens
+            sideMargin = screenWidth * 0.06; // Standard margin
+            circleRadius = glucoseHeight * 0.2; // Standard circle size
+            circlePenWidth = Math.round(screenWidth * 0.018).toNumber(); // ~1.8% of screen width
+            if (circlePenWidth < 4) { circlePenWidth = 4; } // Minimum width
+            if (circlePenWidth > 8) { circlePenWidth = 8; } // Maximum width
+        }
+        
         var elementSpacing = screenWidth * 0.02;
         
         // 1. Draw glucose (left side)
@@ -221,11 +238,6 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var arrowWidth = screenWidth * 0.08; // Estimate arrow width
         
         // 3. Draw loop circle and time (right side - time BEFORE circle)
-        var circleRadius = glucoseHeight * 0.2;  // Smaller circle (was 0.25)
-        var circlePenWidth = Math.round(screenWidth * 0.018).toNumber();  // ~1.8% of screen width (5px on 280px Enduro 3)
-        if (circlePenWidth < 4) { circlePenWidth = 4; }  // Minimum width
-        if (circlePenWidth > 8) { circlePenWidth = 8; }  // Maximum width
-        
         // Calculate right-aligned position for the GROUP (time + circle)
         var loopGroupWidth = loopWidth + elementSpacing + (circleRadius * 2) + circlePenWidth;
         var loopGroupStartX = screenWidth - sideMargin - loopGroupWidth;
@@ -345,7 +357,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         }
     }
 
-    function setCOBorSensRatio(status) as Void {
+     function setCOBorSensRatio(status) as Void {
         var view = View.findDrawableById("COBLabel") as Text;
         
         if (status instanceof Dictionary) {
