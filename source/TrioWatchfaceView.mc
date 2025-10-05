@@ -203,17 +203,16 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         if (screenWidth <= 240) { // Fenix 5 and similar small screens
             baseY = screenHeight * 0.25; // Lower position to avoid time overlap
             sideMargin = screenWidth * 0.08; // More margin (8% vs 6%)
-            // Smaller, more visible loop indicator
-            circleRadius = glucoseHeight * 0.35; // Smaller circle (15% vs 20%)
-            circlePenWidth = Math.round(screenWidth * 0.005).toNumber(); // Thicker ring (2.5% vs 1.8%)
-            if (circlePenWidth < 4) { circlePenWidth = 4; } // Minimum 5px for visibility
+            circleRadius = glucoseHeight * 0.35; // Bigger circle
+            circlePenWidth = 4; // Fixed 4px for small screens
         } else { // Larger screens (Enduro 3, newer watches)
             baseY = screenHeight * 0.2; // Position works fine for larger screens
             sideMargin = screenWidth * 0.06; // Standard margin
             circleRadius = glucoseHeight * 0.2; // Standard circle size
-            circlePenWidth = Math.round(screenWidth * 0.018).toNumber(); // ~1.8% of screen width
-            if (circlePenWidth < 4) { circlePenWidth = 4; } // Minimum width
-            if (circlePenWidth > 8) { circlePenWidth = 8; } // Maximum width
+            // Simple integer conversion without Math.round
+            circlePenWidth = ((screenWidth * 0.018).toNumber());
+            if (circlePenWidth < 4) { circlePenWidth = 4; }
+            if (circlePenWidth > 8) { circlePenWidth = 8; }
         }
         
         var elementSpacing = screenWidth * 0.02;

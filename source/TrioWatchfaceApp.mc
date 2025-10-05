@@ -72,7 +72,7 @@ class TrioWatchfaceApp extends Application.AppBase {
         } as Dictionary;
 
         // Store the sample data
-        Application.Storage.setValue("status", sampleData);
+        //Application.Storage.setValue("status", sampleData);
     }
 
     function onBackgroundData(data) {
