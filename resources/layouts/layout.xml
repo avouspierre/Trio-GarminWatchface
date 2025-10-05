@@ -4,17 +4,16 @@
     <!-- Time -->
     <text-area id="TimeLabel" width="fill" height="20%" x="center" y="10%" font="Graphics.FONT_LARGE" justification="Graphics.TEXT_JUSTIFY_CENTER" color="Graphics.COLOR_WHITE" />
 
-    <!-- Header -->
-    <drawable class="HeaderDrawable" />
+    <!-- Header is drawn manually in drawHeaderSection() -->
+    <!-- <drawable class="HeaderDrawable" /> REMOVED -->
 
     <drawable id="line1" />
 
     <!-- Center -->
-    <!-- IOB on the left -->
+    <!-- IOB on the left - KEEP THE ORIGINAL POSITIONS -->
     <label id="IOBLabel" text="10.5U" x="2%" y="50%" font="Gfx.FONT_MEDIUM" color="Graphics.COLOR_BLUE" justification="Graphics.TEXT_JUSTIFY_LEFT|Gfx.TEXT_JUSTIFY_VCENTER" />
     
     <!-- ISF icon and COB/sensRatio in center -->
-    <!-- Note: No x/y coordinates, will be set dynamically -->
     <bitmap id="ISFIcon" filename="../drawables/UpDown.svg" scaleX="8%" scaleY="8%" scaleRelativeTo="screen">
         <palette>
             <color>00FF00</color>
@@ -23,7 +22,6 @@
     <label id="COBLabel" text="48" x="50%" y="50%" font="Gfx.FONT_MEDIUM" color="Graphics.COLOR_GREEN" justification="Graphics.TEXT_JUSTIFY_CENTER|Gfx.TEXT_JUSTIFY_VCENTER" />
     
     <!-- Eventual BG icon and value on the right -->
-    <!-- Note: No x/y coordinates, will be set dynamically -->
     <bitmap id="EventualIcon" filename="../drawables/Flat.svg" scaleX="6%" scaleY="6%" scaleRelativeTo="screen">
         <palette>
             <color>FFFFFF</color>
@@ -42,5 +40,4 @@
 
     <!-- Date -->
     <text-area id="DateLabel" width="fill" height="20%" x="center" y="75%" font="Graphics.FONT_SYSTEM_LARGE" justification="Graphics.TEXT_JUSTIFY_CENTER" color="Graphics.COLOR_WHITE" />
-
 </layout>

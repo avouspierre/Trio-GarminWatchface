@@ -48,14 +48,14 @@ class TrioWatchfaceApp extends Application.AppBase {
 
         // Simulate data for testing in the simulator
         var sampleData = {
-            "glucose" => "188",
+            "glucose" => "90",
             "lastLoopDateInterval" => lastLoopDateInterval,
-            "delta" => "-20",
-            "iob" => "-0.1",
-            "cob" => "70.2",
+            "delta" => "-10",
+            "iob" => "-2.1",
+            "cob" => "270",
             "isf" => "66.1",
-            //"sensRatio" => "0.65",
-            "eventualBGRaw" => "144",
+            "sensRatio" => "0.65",
+            "eventualBGRaw" => "66",
             "trendRaw" => "FortyFiveDown"
         } as Dictionary;
 
@@ -72,7 +72,7 @@ class TrioWatchfaceApp extends Application.AppBase {
         } as Dictionary;
 
         // Store the sample data
-        //Application.Storage.setValue("status", sampleData);
+        Application.Storage.setValue("status", sampleData);
     }
 
     function onBackgroundData(data) {

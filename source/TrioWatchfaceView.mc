@@ -33,9 +33,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         System.println("onShow");
     }
 
-    // Update the view
     function onUpdate(dc as Dc) as Void {
-
         var status = Application.Storage.getValue("status") as Dictionary;
 
         setTime();
@@ -57,8 +55,9 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         // Call the parent onUpdate function to redraw the layout
         View.onUpdate(dc);
         
-        // NOW manually draw the middle section text and position icons
-        drawMiddleSection(dc, status);
+        // NOW manually draw both the header and middle sections
+        drawHeaderSection(dc, status);  // NEW LINE - draws header manually
+        drawMiddleSection(dc, status);  // EXISTING - draws middle section
     }
     
     function drawMiddleSection(dc as Dc, status) as Void {
@@ -103,7 +102,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var eventualWidth = dc.getTextWidthInPixels(eventualString, Graphics.FONT_MEDIUM);
         
         // Calculate positions with 2% margins instead of 5%
-        var iconSpacing = screenWidth * 0.02;
+        var iconSpacing = screenWidth * 0.005;
         var margin = screenWidth * 0.02; // Reduced from 0.05 to 0.02
         
         var iobLeftEdge = margin; // 2% from left edge
@@ -111,8 +110,9 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         
         var eventualRightEdge = screenWidth - margin; // 2% from right edge (98% position)
         var eventualIconWidth = screenWidth * 0.06;
+        // Position icon much closer - just the width of the text plus small gap
         var eventualIconLeftEdge = eventualRightEdge - eventualWidth - iconSpacing - eventualIconWidth;
-        
+
         // Position eventual icon
         if (eventualIcon != null) {
             eventualIcon.locX = eventualIconLeftEdge;
@@ -164,6 +164,184 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
                 middleString,
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
             );
+        }
+    }
+
+// Add this function to your existing TrioWatchfaceView.mc file
+// This goes right after your drawMiddleSection function
+
+    function drawHeaderSection(dc as Dc, status) as Void {
+        var screenWidth = dc.getWidth();
+        var screenHeight = dc.getHeight();
+        var primaryColor = getApp().getProperty("PrimaryColor") as Number;
+        
+        // Keep font sizes smaller - FONT_NUMBER_MILD for all watch sizes
+        var glucoseFont = Graphics.FONT_NUMBER_MILD;
+        var secondaryFont = Graphics.FONT_TINY;
+        
+        // Position at 15% from top (adjust as needed)
+        var baseY = screenHeight * 0.20;
+        
+        // Get text values
+        var glucoseText = getGlucoseText(status);
+        var deltaText = getDeltaText(status);
+        var loopMinutes = getLoopMinutes(status);
+        var loopText = (loopMinutes < 0 ? "--" : loopMinutes.format("%d")) + "m";
+        
+        // Get font dimensions
+        var glucoseHeight = dc.getFontHeight(glucoseFont);
+        var secondaryHeight = dc.getFontHeight(secondaryFont);
+        
+        // Calculate text widths
+        var glucoseWidth = dc.getTextWidthInPixels(glucoseText, glucoseFont);
+        var deltaWidth = dc.getTextWidthInPixels(deltaText, secondaryFont);
+        var loopWidth = dc.getTextWidthInPixels(loopText, secondaryFont);
+        
+        // Margins and spacing
+        var sideMargin = screenWidth * 0.06;
+        var elementSpacing = screenWidth * 0.02;
+        
+        // 1. Draw glucose (left side)
+        dc.setColor(primaryColor, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(
+            sideMargin,
+            baseY,
+            glucoseFont,
+            glucoseText,
+            Graphics.TEXT_JUSTIFY_LEFT
+        );
+        
+        // 2. Draw arrow after glucose
+        var arrowX = sideMargin + glucoseWidth + elementSpacing;
+        var arrowY = baseY + glucoseHeight * 0.3;
+        var arrowBitmap = getDirectionBitmap(status);
+        if (arrowBitmap != null) {
+            dc.drawBitmap(arrowX, arrowY, arrowBitmap);
+        }
+        var arrowWidth = screenWidth * 0.08; // Estimate arrow width
+        
+        // 3. Draw loop circle and time (right side - time BEFORE circle)
+        var circleRadius = glucoseHeight * 0.2;  // Smaller circle (was 0.25)
+        var circlePenWidth = Math.round(screenWidth * 0.018).toNumber();  // ~1.8% of screen width (5px on 280px Enduro 3)
+        if (circlePenWidth < 4) { circlePenWidth = 4; }  // Minimum width
+        if (circlePenWidth > 8) { circlePenWidth = 8; }  // Maximum width
+        
+        // Calculate right-aligned position for the GROUP (time + circle)
+        var loopGroupWidth = loopWidth + elementSpacing + (circleRadius * 2) + circlePenWidth;
+        var loopGroupStartX = screenWidth - sideMargin - loopGroupWidth;
+        
+        // Draw loop time FIRST (on the left of circle)
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(
+            loopGroupStartX,
+            baseY + (glucoseHeight - secondaryHeight) / 2,
+            secondaryFont,
+            loopText,
+            Graphics.TEXT_JUSTIFY_LEFT
+        );
+        
+        // Draw circle AFTER the time text
+        var circleX = loopGroupStartX + loopWidth + elementSpacing + circleRadius + (circlePenWidth/2);
+        var circleY = baseY + (glucoseHeight / 2);
+        
+        var loopColor = getLoopColor(loopMinutes);
+        dc.setColor(loopColor, Graphics.COLOR_TRANSPARENT);
+        dc.setPenWidth(circlePenWidth);
+        dc.drawCircle(circleX, circleY, circleRadius);
+        
+        // 4. Draw delta (centered in remaining space)
+        var deltaStartX = arrowX + arrowWidth + elementSpacing;
+        var deltaEndX = loopGroupStartX - elementSpacing;  // Use loopGroupStartX instead of circleX
+        var deltaCenterX = (deltaStartX + deltaEndX) / 2;
+        
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(
+            deltaCenterX,
+            baseY + (glucoseHeight - secondaryHeight) / 2,
+            secondaryFont,
+            deltaText,
+            Graphics.TEXT_JUSTIFY_CENTER
+        );
+    }
+    
+    // Helper functions for header - add these if they don't exist
+    function getGlucoseText(status) as String {
+        if (status instanceof Dictionary) {
+            var glucose = status["glucose"];
+            return (glucose == null) ? "--" : glucose.toString();
+        }
+        return "--";
+    }
+    
+    function getDeltaText(status) as String {
+        if (status instanceof Dictionary) {
+            var delta = status["delta"];
+            return (delta == null) ? "--" : delta.toString();
+        }
+        return "--";
+    }
+    
+    function getDirectionBitmap(status) as BitmapType {
+        var bitmap = WatchUi.loadResource(Rez.Drawables.Unknown);
+        if (status instanceof Dictionary) {
+            var trend = status["trendRaw"] as String;
+            if (trend == null) {
+                return bitmap;
+            }
+            
+            switch (trend) {
+                case "Flat":
+                    bitmap = WatchUi.loadResource(Rez.Drawables.Flat);
+                    break;
+                case "SingleUp":
+                    bitmap = WatchUi.loadResource(Rez.Drawables.SingleUp);
+                    break;
+                case "SingleDown":
+                    bitmap = WatchUi.loadResource(Rez.Drawables.SingleDown);
+                    break;
+                case "FortyFiveUp":
+                    bitmap = WatchUi.loadResource(Rez.Drawables.FortyFiveUp);
+                    break;
+                case "FortyFiveDown":
+                    bitmap = WatchUi.loadResource(Rez.Drawables.FortyFiveDown);
+                    break;
+                case "DoubleUp":
+                case "TripleUp":
+                    bitmap = WatchUi.loadResource(Rez.Drawables.DoubleUp);
+                    break;
+                case "DoubleDown":
+                case "TripleDown":
+                    bitmap = WatchUi.loadResource(Rez.Drawables.DoubleDown);
+                    break;
+            }
+        }
+        return bitmap;
+    }
+    
+    function getLoopMinutes(status) as Number {
+        if (status instanceof Dictionary) {
+            var lastLoopDate = status["lastLoopDateInterval"] as Number;
+            if (lastLoopDate == null) {
+                return -1;
+            }
+            
+            var now = Time.now().value() as Number;
+            var deltaSeconds = now - lastLoopDate;
+            var min = (deltaSeconds > 0) ? ((deltaSeconds + 59) / 60) : 0;
+            return min;
+        }
+        return -1;
+    }
+    
+    function getLoopColor(min as Number) as Number {
+        if (min < 0) {
+            return Graphics.COLOR_LT_GRAY;
+        } else if (min <= 7) {
+            return Graphics.COLOR_GREEN;
+        } else if (min <= 12) {
+            return Graphics.COLOR_YELLOW;
+        } else {
+            return Graphics.COLOR_RED;
         }
     }
 
@@ -239,7 +417,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var eventualWidth = dc.getTextWidthInPixels(eventualString, Graphics.FONT_MEDIUM);
         
         // Define spacing
-        var iconSpacing = screenWidth * 0.02; // 2% space between icon and text
+        var iconSpacing = screenWidth * 0.04; // 2% space between icon and text
         
         // Position IOB (left-aligned at 5% margin)
         var iobLeftEdge = screenWidth * 0.05;
@@ -251,7 +429,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         // Position Eventual BG first to know its icon position
         var eventualRightEdge = screenWidth * 0.95;
         var eventualIconWidth = screenWidth * 0.06; // 6% as defined in layout.xml
-        var eventualIconLeftEdge = eventualRightEdge - eventualWidth - iconSpacing - eventualIconWidth;
+        var eventualIconLeftEdge = eventualRightEdge - eventualWidth - eventualIconWidth;
         
         if (eventualLabel != null && eventualIcon != null) {
             // Right-align the text at 95% of screen width
