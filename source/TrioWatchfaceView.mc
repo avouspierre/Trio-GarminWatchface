@@ -177,6 +177,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         
         // Keep font sizes smaller - FONT_NUMBER_MILD for all watch sizes
         var glucoseFont = Graphics.FONT_NUMBER_MILD;
+        var deltaFont = Graphics.FONT_MEDIUM;  // One size smaller than NUMBER_MILD
         var secondaryFont = Graphics.FONT_TINY;
         
         // Get text values
@@ -187,11 +188,12 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         
         // Get font dimensions
         var glucoseHeight = dc.getFontHeight(glucoseFont);
+        var deltaHeight = dc.getFontHeight(deltaFont);
         var secondaryHeight = dc.getFontHeight(secondaryFont);
         
         // Calculate text widths
         var glucoseWidth = dc.getTextWidthInPixels(glucoseText, glucoseFont);
-        var deltaWidth = dc.getTextWidthInPixels(deltaText, secondaryFont);
+        var deltaWidth = dc.getTextWidthInPixels(deltaText, deltaFont);
         var loopWidth = dc.getTextWidthInPixels(loopText, secondaryFont);
         
         // Dynamic positioning and sizing based on screen size
@@ -268,8 +270,8 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(
             deltaCenterX,
-            baseY + (glucoseHeight - secondaryHeight) / 2,
-            secondaryFont,
+            baseY + (glucoseHeight - deltaHeight) / 2,
+            deltaFont,
             deltaText,
             Graphics.TEXT_JUSTIFY_CENTER
         );
