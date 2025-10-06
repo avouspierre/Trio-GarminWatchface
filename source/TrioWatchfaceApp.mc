@@ -49,15 +49,15 @@ class TrioWatchfaceApp extends Application.AppBase {
         var sampleDataMgdl = {
             "date" => lastLoopDateMs,
             "sgv" => 244,
-            "delta" => 27,
+            "delta" => -27,
             "direction" => "DoubleUp",
             "units_hint" => "mmol",
-            "iob" => 0.1,
+            "iob" => 10.9,
             "tbr" => 210,
             "cob" => 20.0,
             "eventualBG" => 85,
             "isf" => 100,
-            //"sensRatio" => 0.5
+            "sensRatio" => 0.9
         } as Dictionary;
 
         // Store the sample data (uncomment one to test)

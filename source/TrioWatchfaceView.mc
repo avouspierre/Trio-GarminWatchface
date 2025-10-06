@@ -61,23 +61,26 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         setHeartRate();
         setSteps();
         
-        // Set values
-        setIOB(status);
-        // Don't set COB text - we'll draw it manually
-        setEventualBG(status);
-        
-        // Hide the COB label by setting it to empty
+        // Hide all the labels - we'll draw everything manually
+        var iobLabel = View.findDrawableById("IOBLabel") as Text;
+        if (iobLabel != null) {
+            iobLabel.setText("");
+        }
         var cobLabel = View.findDrawableById("COBLabel") as Text;
         if (cobLabel != null) {
             cobLabel.setText("");
+        }
+        var eventualLabel = View.findDrawableById("EventualBGLabel") as Text;
+        if (eventualLabel != null) {
+            eventualLabel.setText("");
         }
         
         // Call the parent onUpdate function to redraw the layout
         View.onUpdate(dc);
         
         // NOW manually draw both the header and middle sections
-        drawHeaderSection(dc, status);  // draws header manually
-        drawMiddleSection(dc, status);  // draws middle section
+        drawMiddleSection(dc, status);  // draws IOB/COB/Eventual row
+        drawHeaderSection(dc, status);  // draws glucose/delta/loop row
     }
     
     // Helper function to check if units are mmol/L
@@ -104,10 +107,18 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var screenWidth = dc.getWidth();
         var screenHeight = dc.getHeight();
         
+        // Move to header position (20-25% down from top)
+        var baseY;
+        if (screenWidth <= 240) {
+            baseY = screenHeight * 0.37;
+        } else {
+            baseY = screenHeight * 0.32;
+        }
+        
         // Get font height to adjust icon positioning
         var fontHeight = dc.getFontHeight(Graphics.FONT_MEDIUM);
-        var textY = screenHeight * 0.5;
-        var iconY = textY - (fontHeight * 0.3);
+        var textY = baseY;
+        var iconY = textY - (fontHeight * 0.2);
         
         // Get the icons
         var isfIcon = View.findDrawableById("ISFIcon") as Bitmap;
@@ -141,9 +152,9 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var middleWidth = dc.getTextWidthInPixels(middleString, Graphics.FONT_MEDIUM);
         var eventualWidth = dc.getTextWidthInPixels(eventualString, Graphics.FONT_MEDIUM);
         
-        // Calculate positions with 2% margins
-        var iconSpacing = screenWidth * 0.005;
-        var margin = screenWidth * 0.02;
+        // Use header-style margins (6-8% instead of 2%)
+        var iconSpacing = screenWidth * 0.015;
+        var margin = screenWidth * 0.05;
         
         var iobLeftEdge = margin;
         var iobRightEdge = iobLeftEdge + iobWidth;
@@ -152,17 +163,38 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var eventualIconWidth = screenWidth * 0.06;
         var eventualIconLeftEdge = eventualRightEdge - eventualWidth - iconSpacing - eventualIconWidth;
 
-        // Position eventual icon
+        // 1. Draw IOB text (left side)
+        dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(
+            iobLeftEdge,
+            textY,
+            Graphics.FONT_MEDIUM,
+            iobString,
+            Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
+        );
+
+        // 2. Position and draw eventual icon
         if (eventualIcon != null) {
             eventualIcon.locX = eventualIconLeftEdge;
             eventualIcon.locY = iconY;
         }
         
+        // 3. Draw Eventual BG text (right side)
+        var primaryColor = getApp().getProperty("PrimaryColor") as Number;
+        dc.setColor(primaryColor, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(
+            eventualRightEdge,
+            textY,
+            Graphics.FONT_MEDIUM,
+            eventualString,
+            Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER
+        );
+        
         // Calculate center of available space
         var availableCenter = (iobRightEdge + eventualIconLeftEdge) / 2;
         
-        // Position ISF icon and draw middle text manually
-        var isfIconWidth = screenWidth * 0.08;
+        // Position ISF icon and draw middle text (COB or sensRatio)
+        var isfIconWidth = screenWidth * 0.06;
         
         if (showingSensRatio) {
             // For sensRatio: icon + text should be centered as a unit
@@ -225,83 +257,80 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var deltaWidth = dc.getTextWidthInPixels(deltaText, deltaFont);
         var loopWidth = dc.getTextWidthInPixels(loopText, secondaryFont);
         
-        // Dynamic positioning based on screen size
-        var baseY;
-        var sideMargin;
-        var circleRadius;
-        var circlePenWidth;
+        // Move to middle position (51% down) with tight margins
+        var baseY = screenHeight * 0.51;
+        var sideMargin = screenWidth * 0.005;
+        var circleRadius = glucoseHeight * 0.2;
+        var circlePenWidth = 6;
         
-        if (screenWidth <= 240) {
-            baseY = screenHeight * 0.25;
-            sideMargin = screenWidth * 0.08;
-            circleRadius = glucoseHeight * 0.35;
-            circlePenWidth = 4;
-        } else {
-            baseY = screenHeight * 0.2;
-            sideMargin = screenWidth * 0.06;
-            circleRadius = glucoseHeight * 0.2;
-            circlePenWidth = ((screenWidth * 0.018).toNumber());
-            if (circlePenWidth < 4) { circlePenWidth = 4; }
-            if (circlePenWidth > 8) { circlePenWidth = 8; }
+        if (screenWidth > 240) {
+            circlePenWidth = ((screenWidth * 0.015).toNumber());
+            if (circlePenWidth < 3) { circlePenWidth = 3; }
+            if (circlePenWidth > 6) { circlePenWidth = 6; }
         }
         
-        var elementSpacing = screenWidth * 0.02;
+        var elementSpacing = screenWidth * 0.015;
+        var arrowWidth = screenWidth * 0.06;
         
-        // 1. Draw glucose (left side)
-        dc.setColor(primaryColor, Graphics.COLOR_TRANSPARENT);
+        // 1. Draw delta (LEFT side)
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(
             sideMargin,
             baseY,
-            glucoseFont,
-            glucoseText,
-            Graphics.TEXT_JUSTIFY_LEFT
+            deltaFont,
+            deltaText,
+            Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
         );
         
-        // 2. Draw arrow after glucose
-        var arrowX = sideMargin + glucoseWidth + elementSpacing;
-        var arrowY = baseY + glucoseHeight * 0.3;
-        var arrowBitmap = getDirectionBitmap(status);
-        if (arrowBitmap != null) {
-            dc.drawBitmap(arrowX, arrowY, arrowBitmap);
-        }
-        var arrowWidth = screenWidth * 0.08;
+        // Calculate where delta ends
+        var deltaRightEdge = sideMargin + deltaWidth;
         
-        // 3. Draw loop circle and time (right side - time BEFORE circle)
+        // 2. Draw loop time and circle (RIGHT side)
         var loopGroupWidth = loopWidth + elementSpacing + (circleRadius * 2) + circlePenWidth;
         var loopGroupStartX = screenWidth - sideMargin - loopGroupWidth;
         
-        // Draw loop time FIRST
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(
             loopGroupStartX,
-            baseY + (glucoseHeight - secondaryHeight) / 2,
+            baseY,
             secondaryFont,
             loopText,
-            Graphics.TEXT_JUSTIFY_LEFT
+            Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
         );
         
-        // Draw circle AFTER the time text
         var circleX = loopGroupStartX + loopWidth + elementSpacing + circleRadius + (circlePenWidth/2);
-        var circleY = baseY + (glucoseHeight / 2);
+        var circleY = baseY;
         
         var loopColor = getLoopColor(loopMinutes);
         dc.setColor(loopColor, Graphics.COLOR_TRANSPARENT);
         dc.setPenWidth(circlePenWidth);
         dc.drawCircle(circleX, circleY, circleRadius);
         
-        // 4. Draw delta (centered in remaining space)
-        var deltaStartX = arrowX + arrowWidth + elementSpacing;
-        var deltaEndX = loopGroupStartX - elementSpacing;
-        var deltaCenterX = (deltaStartX + deltaEndX) / 2;
+        // 3. Draw glucose + arrow (CENTERED between delta and loop)
+        // Calculate the available space between delta and loop
+        var availableStart = deltaRightEdge + elementSpacing;
+        var availableEnd = loopGroupStartX - elementSpacing;
+        var availableCenter = (availableStart + availableEnd) / 2;
         
-        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+        // Calculate glucose+arrow as a unit
+        var glucoseArrowWidth = glucoseWidth + elementSpacing + arrowWidth;
+        var glucoseX = availableCenter - (glucoseArrowWidth / 2);
+        
+        dc.setColor(primaryColor, Graphics.COLOR_TRANSPARENT);
         dc.drawText(
-            deltaCenterX,
-            baseY + (glucoseHeight - deltaHeight) / 2,
-            deltaFont,
-            deltaText,
-            Graphics.TEXT_JUSTIFY_CENTER
+            glucoseX,
+            baseY,
+            glucoseFont,
+            glucoseText,
+            Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
         );
+        
+        var arrowX = glucoseX + glucoseWidth + elementSpacing;
+        var arrowY = baseY - arrowWidth / 2;
+        var arrowBitmap = getDirectionBitmap(status);
+        if (arrowBitmap != null) {
+            dc.drawBitmap(arrowX, arrowY, arrowBitmap);
+        }
     }
     
     // Helper functions for header
@@ -381,8 +410,8 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
                 return -1;
             }
             
-            // Convert to number first, then divide
-            var lastLoopMs = lastLoopDate.toLong();    // Handles large values
+            // Use toLong() to handle large millisecond timestamps
+            var lastLoopMs = lastLoopDate.toLong();
             var lastLoopSeconds = lastLoopMs / 1000;
             
             var now = Time.now().value();
@@ -398,8 +427,8 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
                 return 0;
             }
             
-            // Force integer division by converting to long first
-            var minutes = (deltaSeconds / 60).toLong();
+            // Convert to minutes as integer
+            var minutes = (deltaSeconds / 60).toNumber();
             System.println("  minutes: " + minutes);
             return minutes;
         }
