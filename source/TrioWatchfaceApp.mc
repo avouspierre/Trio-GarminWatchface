@@ -27,7 +27,6 @@ class TrioWatchfaceApp extends Application.AppBase {
     function onStart(state as Dictionary?) as Void {
         //register for temporal events if they are supported
         if(Toybox.System has :ServiceDelegate) {
-            // canDoBG=true;
             Background.registerForTemporalEvent(new Time.Duration(5 * 60));
             if (Background has :registerForPhoneAppMessageEvent) {
                 Background.registerForPhoneAppMessageEvent();
@@ -40,39 +39,30 @@ class TrioWatchfaceApp extends Application.AppBase {
             System.println("****background not available on this device****");
         }
 
-        // Get the current Unix time
-        var now = Time.now().value() as Number;
+        // Get the current Unix time in milliseconds (matching new structure)
+        var now = Time.now().value();
+        var fourMinutesAgo = now - (4 * 60); // 4 minutes ago in seconds
+        var lastLoopDateMs = fourMinutesAgo.toLong() * 1000; // Use Long to avoid overflow
 
-        // Subtract x minutes (x * 60 seconds) to get the timestamp for x minutes ago
-        var lastLoopDateInterval = now - (4 * 60);
 
-        // Simulate data for testing in the simulator
-        var sampleData = {
-            "glucose" => "90",
-            "lastLoopDateInterval" => lastLoopDateInterval,
-            "delta" => "-10",
-            "iob" => "-2.1",
-            "cob" => "270",
-            "isf" => "66.1",
-            "sensRatio" => "0.65",
-            "eventualBGRaw" => "66",
-            "trendRaw" => "FortyFiveDown"
+        // Simulate data for testing in the simulator - mg/dL units
+        var sampleDataMgdl = {
+            "date" => lastLoopDateMs,
+            "sgv" => 244,
+            "delta" => 27,
+            "direction" => "DoubleUp",
+            "units_hint" => "mmol",
+            "iob" => 0.1,
+            "tbr" => 210,
+            "cob" => 20.0,
+            "eventualBG" => 85,
+            "isf" => 100,
+            //"sensRatio" => 0.5
         } as Dictionary;
 
-        var mmollsampleData = {
-            "glucose" => "10.9",
-            "lastLoopDateInterval" => lastLoopDateInterval,
-            "delta" => "-2.3",
-            "iob" => "2.9",
-            "cob" => "70.2",
-            "isf" => "3.7",
-            "sensRatio" => "1.63",
-            "eventualBGRaw" => "9.9",
-            "trendRaw" => "FortyFiveDown"
-        } as Dictionary;
-
-        // Store the sample data
-        //Application.Storage.setValue("status", sampleData);
+        // Store the sample data (uncomment one to test)
+        // Application.Storage.setValue("status", sampleDataMgdl);
+        Application.Storage.setValue("status", sampleDataMgdl);
     }
 
     function onBackgroundData(data) {
