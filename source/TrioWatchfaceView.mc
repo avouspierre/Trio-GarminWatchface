@@ -21,69 +21,28 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         WatchFace.initialize();
     }
 
-    // Load your resources here
     function onLayout(dc as Dc) as Void {
         setLayout(Rez.Layouts.WatchFace(dc));
     }
 
-    // Called when this View is brought to the foreground. Restore
-    // the state of this View and prepare it to be shown. This includes
-    // loading resources into memory.
     function onShow() as Void {
         System.println("onShow");
     }
 
     function onUpdate(dc as Dc) as Void {
         var status = Application.Storage.getValue("status") as Dictionary;
-        
-        // DEBUG: Print what we received
-        System.println("=== DEBUG onUpdate ===");
-        if (status == null) {
-            System.println("ERROR: status is null!");
-        } else if (!(status instanceof Dictionary)) {
-            System.println("ERROR: status is not a Dictionary!");
-        } else {
-            System.println("Status data received:");
-            System.println("  sgv: " + status["sgv"]);
-            System.println("  delta: " + status["delta"]);
-            System.println("  direction: " + status["direction"]);
-            System.println("  date: " + status["date"]);
-            System.println("  eventualBG: " + status["eventualBG"]);
-            System.println("  iob: " + status["iob"]);
-            System.println("  cob: " + status["cob"]);
-            System.println("  sensRatio: " + status["sensRatio"]);
-            System.println("  units_hint: " + status["units_hint"]);
-        }
-        System.println("=== END DEBUG ===");
 
         setTime();
         setDate();
         setHeartRate();
         setSteps();
         
-        // Hide all the labels - we'll draw everything manually
-        var iobLabel = View.findDrawableById("IOBLabel") as Text;
-        if (iobLabel != null) {
-            iobLabel.setText("");
-        }
-        var cobLabel = View.findDrawableById("COBLabel") as Text;
-        if (cobLabel != null) {
-            cobLabel.setText("");
-        }
-        var eventualLabel = View.findDrawableById("EventualBGLabel") as Text;
-        if (eventualLabel != null) {
-            eventualLabel.setText("");
-        }
-        
-        // Call the parent onUpdate function to redraw the layout
         View.onUpdate(dc);
         
-        // NOW manually draw both the header and middle sections
-        drawMiddleSection(dc, status);  // draws IOB/COB/Eventual row
-        drawHeaderSection(dc, status);  // draws glucose/delta/loop row
+        drawMiddleSection(dc, status);
+        drawHeaderSection(dc, status);
     }
     
-    // Helper function to check if units are mmol/L
     function isMMOL(status) as Boolean {
         if (status instanceof Dictionary) {
             var unitsHint = status["units_hint"];
@@ -92,7 +51,6 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         return false;
     }
     
-    // Helper function to convert mg/dL to mmol/L if needed
     function convertGlucoseValue(value, status) as Float {
         if (value instanceof Number) {
             if (isMMOL(status)) {
@@ -107,29 +65,24 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var screenWidth = dc.getWidth();
         var screenHeight = dc.getHeight();
         
-        // Move to header position (20-25% down from top)
         var baseY;
         if (screenWidth <= 240) {
-            baseY = screenHeight * 0.37;
-        } else {
             baseY = screenHeight * 0.32;
+        } else {
+            baseY = screenHeight * 0.33;
         }
         
-        // Get font height to adjust icon positioning
         var fontHeight = dc.getFontHeight(Graphics.FONT_MEDIUM);
         var textY = baseY;
         var iconY = textY - (fontHeight * 0.2);
         
-        // Get the icons
         var isfIcon = View.findDrawableById("ISFIcon") as Bitmap;
         var eventualIcon = View.findDrawableById("EventualIcon") as Bitmap;
         
-        // Get actual text values
-        var iobString = getIOBString(status);
+        var iobValue = getIOBValue(status);
         var eventualString = getEventualBGString(status);
         
-        // Determine middle string (COB or sensRatio)
-        var middleString = "";
+        var middleValue = "";
         var showingSensRatio = false;
         
         if (status instanceof Dictionary) {
@@ -137,49 +90,56 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
             var cob = status["cob"];
             
             if (sensRatio != null) {
-                middleString = getSensRatioString(status);
+                middleValue = getSensRatioString(status);
                 showingSensRatio = true;
             } else if (cob != null) {
-                middleString = getCOBString(status);
+                middleValue = getCOBValue(status);
                 showingSensRatio = false;
             } else {
-                middleString = "--";
+                middleValue = "--";
             }
         }
         
-        // Calculate text widths
-        var iobWidth = dc.getTextWidthInPixels(iobString, Graphics.FONT_MEDIUM);
-        var middleWidth = dc.getTextWidthInPixels(middleString, Graphics.FONT_MEDIUM);
+        var iobWidth = dc.getTextWidthInPixels(iobValue, Graphics.FONT_MEDIUM);
+        var iobUnitWidth = dc.getTextWidthInPixels("U", Graphics.FONT_XTINY);
+        var middleWidth = dc.getTextWidthInPixels(middleValue, Graphics.FONT_MEDIUM);
         var eventualWidth = dc.getTextWidthInPixels(eventualString, Graphics.FONT_MEDIUM);
         
-        // Use header-style margins (6-8% instead of 2%)
         var iconSpacing = screenWidth * 0.015;
-        var margin = screenWidth * 0.05;
+        var unitSpacing = screenWidth * 0.005;
+        var margin = screenWidth * 0.07;
         
         var iobLeftEdge = margin;
-        var iobRightEdge = iobLeftEdge + iobWidth;
+        var iobTotalWidth = iobWidth + unitSpacing + iobUnitWidth;
+        var iobRightEdge = iobLeftEdge + iobTotalWidth;
         
         var eventualRightEdge = screenWidth - margin;
         var eventualIconWidth = screenWidth * 0.06;
         var eventualIconLeftEdge = eventualRightEdge - eventualWidth - iconSpacing - eventualIconWidth;
 
-        // 1. Draw IOB text (left side)
         dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(
             iobLeftEdge,
             textY,
             Graphics.FONT_MEDIUM,
-            iobString,
+            iobValue,
+            Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
+        );
+        
+        var unitY = textY + (dc.getFontHeight(Graphics.FONT_XTINY)) * 0.2;
+        dc.drawText(
+            iobLeftEdge + iobWidth + unitSpacing,
+            unitY,
+            Graphics.FONT_XTINY,
+            "U",
             Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
         );
 
-        // 2. Position and draw eventual icon
         if (eventualIcon != null) {
             eventualIcon.locX = eventualIconLeftEdge;
             eventualIcon.locY = iconY;
         }
         
-        // 3. Draw Eventual BG text (right side)
         var primaryColor = getApp().getProperty("PrimaryColor") as Number;
         dc.setColor(primaryColor, Graphics.COLOR_TRANSPARENT);
         dc.drawText(
@@ -190,14 +150,10 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
             Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER
         );
         
-        // Calculate center of available space
         var availableCenter = (iobRightEdge + eventualIconLeftEdge) / 2;
-        
-        // Position ISF icon and draw middle text (COB or sensRatio)
         var isfIconWidth = screenWidth * 0.06;
         
         if (showingSensRatio) {
-            // For sensRatio: icon + text should be centered as a unit
             var totalUnitWidth = isfIconWidth + iconSpacing + middleWidth;
             
             if (isfIcon != null) {
@@ -212,22 +168,33 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
                 textX,
                 textY,
                 Graphics.FONT_MEDIUM,
-                middleString,
+                middleValue,
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
             );
         } else {
-            // For COB: no icon, yellow text, centered directly
             if (isfIcon != null) {
-                isfIcon.locX = -100; // Move off screen
+                isfIcon.locX = -100;
             }
+            
+            var cobUnitWidth = dc.getTextWidthInPixels("g", Graphics.FONT_XTINY);
+            var cobTotalWidth = middleWidth + unitSpacing + cobUnitWidth;
+            var cobStartX = availableCenter - (cobTotalWidth / 2);
             
             dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
             dc.drawText(
-                availableCenter,
+                cobStartX,
                 textY,
                 Graphics.FONT_MEDIUM,
-                middleString,
-                Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
+                middleValue,
+                Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
+            );
+            
+            dc.drawText(
+                cobStartX + middleWidth + unitSpacing,
+                unitY,
+                Graphics.FONT_XTINY,
+                "g",
+                Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
             );
         }
     }
@@ -241,38 +208,33 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var deltaFont = Graphics.FONT_MEDIUM;
         var secondaryFont = Graphics.FONT_TINY;
         
-        // Get text values
         var glucoseText = getGlucoseText(status);
         var deltaText = getDeltaText(status);
         var loopMinutes = getLoopMinutes(status);
         var loopText = (loopMinutes < 0 ? "--" : loopMinutes.format("%d")) + "m";
         
-        // Get font dimensions
         var glucoseHeight = dc.getFontHeight(glucoseFont);
-        var deltaHeight = dc.getFontHeight(deltaFont);
-        var secondaryHeight = dc.getFontHeight(secondaryFont);
         
-        // Calculate text widths
         var glucoseWidth = dc.getTextWidthInPixels(glucoseText, glucoseFont);
         var deltaWidth = dc.getTextWidthInPixels(deltaText, deltaFont);
         var loopWidth = dc.getTextWidthInPixels(loopText, secondaryFont);
         
-        // Move to middle position (51% down) with tight margins
         var baseY = screenHeight * 0.51;
         var sideMargin = screenWidth * 0.005;
-        var circleRadius = glucoseHeight * 0.2;
-        var circlePenWidth = 6;
+        var circleRadius = glucoseHeight * 0.4;
+        var circlePenWidth = 4;
         
         if (screenWidth > 240) {
             circlePenWidth = ((screenWidth * 0.015).toNumber());
+            circleRadius = glucoseHeight * 0.25;
             if (circlePenWidth < 3) { circlePenWidth = 3; }
             if (circlePenWidth > 6) { circlePenWidth = 6; }
         }
+
         
         var elementSpacing = screenWidth * 0.015;
         var arrowWidth = screenWidth * 0.06;
         
-        // 1. Draw delta (LEFT side)
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(
             sideMargin,
@@ -282,10 +244,8 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
             Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
         );
         
-        // Calculate where delta ends
         var deltaRightEdge = sideMargin + deltaWidth;
         
-        // 2. Draw loop time and circle (RIGHT side)
         var loopGroupWidth = loopWidth + elementSpacing + (circleRadius * 2) + circlePenWidth;
         var loopGroupStartX = screenWidth - sideMargin - loopGroupWidth;
         
@@ -306,13 +266,10 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         dc.setPenWidth(circlePenWidth);
         dc.drawCircle(circleX, circleY, circleRadius);
         
-        // 3. Draw glucose + arrow (CENTERED between delta and loop)
-        // Calculate the available space between delta and loop
         var availableStart = deltaRightEdge + elementSpacing;
         var availableEnd = loopGroupStartX - elementSpacing;
         var availableCenter = (availableStart + availableEnd) / 2;
         
-        // Calculate glucose+arrow as a unit
         var glucoseArrowWidth = glucoseWidth + elementSpacing + arrowWidth;
         var glucoseX = availableCenter - (glucoseArrowWidth / 2);
         
@@ -333,7 +290,6 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         }
     }
     
-    // Helper functions for header
     function getGlucoseText(status) as String {
         if (status instanceof Dictionary) {
             var glucose = status["sgv"];
@@ -406,30 +362,20 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         if (status instanceof Dictionary) {
             var lastLoopDate = status["date"];
             if (lastLoopDate == null) {
-                System.println("ERROR: date field is null");
                 return -1;
             }
             
-            // Use toLong() to handle large millisecond timestamps
             var lastLoopMs = lastLoopDate.toLong();
             var lastLoopSeconds = lastLoopMs / 1000;
             
             var now = Time.now().value();
             var deltaSeconds = now - lastLoopSeconds;
             
-            System.println("Loop calculation:");
-            System.println("  lastLoopMs: " + lastLoopMs);
-            System.println("  lastLoopSeconds: " + lastLoopSeconds);
-            System.println("  now: " + now);
-            System.println("  deltaSeconds: " + deltaSeconds);
-            
             if (deltaSeconds <= 0) {
                 return 0;
             }
             
-            // Convert to minutes as integer
             var minutes = (deltaSeconds / 60).toNumber();
-            System.println("  minutes: " + minutes);
             return minutes;
         }
         return -1;
@@ -447,25 +393,25 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         }
     }
 
-    function getIOBString(status) as String {
+    function getIOBValue(status) as String {
         if (status instanceof Dictionary) {
             var iob = status["iob"];
             if (iob instanceof Number || iob instanceof Float || iob instanceof Double) {
-                return iob.format("%2.1f") + "U";
+                return iob.format("%2.1f");
             } else if (iob != null) {
-                return iob.toString() + "U";
+                return iob.toString();
             }
         }
         return "--";
     }
     
-    function getCOBString(status) as String {
+    function getCOBValue(status) as String {
         if (status instanceof Dictionary) {
             var cob = status["cob"];
             if (cob instanceof Number || cob instanceof Float || cob instanceof Double) {
-                return cob.format("%d") + "g";
+                return cob.format("%d");
             } else if (cob != null) {
-                return cob.toString() + "g";
+                return cob.toString();
             }
         }
         return "--";
@@ -548,23 +494,8 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var batlevel = myStats.battery;
         var batString = Lang.format( "$1$%", [ batlevel.format( "%2d" ) ] );
 
-        var info =  ActivityMonitor.getInfo();
-        var steps =   info.steps;
-        var stepsString = (steps == null || steps == 0) ? "--" : steps.toString();
-
         var view = View.findDrawableById("StepsLabel") as Text;
         view.setText(batString);
-    }
-
-    function setIOB(status) as Void {
-        var view = View.findDrawableById("IOBLabel") as Text;
-        view.setText(getIOBString(status));
-    }
-
-    function setEventualBG(status) as Void {
-        var view = View.findDrawableById("EventualBGLabel") as Text;
-        view.setColor(getApp().getProperty("PrimaryColor") as Number);
-        view.setText(getEventualBGString(status));
     }
 
     function onHide() as Void {
