@@ -39,8 +39,8 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         
         View.onUpdate(dc);
         
+        drawTopSection(dc, status);
         drawMiddleSection(dc, status);
-        drawHeaderSection(dc, status);
     }
     
     function isMMOL(status) as Boolean {
@@ -61,19 +61,29 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         return 0.0;
     }
     
-    function drawMiddleSection(dc as Dc, status) as Void {
+    function drawTopSection(dc as Dc, status) as Void {
         var screenWidth = dc.getWidth();
         var screenHeight = dc.getHeight();
         
         var baseY;
         if (screenWidth <= 240) {
-            baseY = screenHeight * 0.32;
+            baseY = screenHeight * 0.36;
         } else {
-            baseY = screenHeight * 0.33;
+            baseY = screenHeight * 0.37;
         }
         
-        var fontHeight = dc.getFontHeight(Graphics.FONT_MEDIUM);
-        var textY = baseY;
+        var mainFont = Graphics.FONT_MEDIUM;
+        var unitFont = Graphics.FONT_XTINY;
+        
+        var fontHeight = dc.getFontHeight(mainFont);
+        var fontDescent = dc.getFontDescent(mainFont);
+        var unitDescent = dc.getFontDescent(unitFont);
+        var unitHeight = dc.getFontHeight(unitFont);
+        
+        // Calculate baseline-aligned Y positions
+        var targetBaseline = baseY;
+        var textY = targetBaseline - (fontHeight - 2 * fontDescent) / 2;
+        var unitY = targetBaseline - (unitHeight - 2 * unitDescent) / 2;
         var iconY = textY - (fontHeight * 0.2);
         
         var isfIcon = View.findDrawableById("ISFIcon") as Bitmap;
@@ -100,10 +110,10 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
             }
         }
         
-        var iobWidth = dc.getTextWidthInPixels(iobValue, Graphics.FONT_MEDIUM);
-        var iobUnitWidth = dc.getTextWidthInPixels("U", Graphics.FONT_XTINY);
-        var middleWidth = dc.getTextWidthInPixels(middleValue, Graphics.FONT_MEDIUM);
-        var eventualWidth = dc.getTextWidthInPixels(eventualString, Graphics.FONT_MEDIUM);
+        var iobWidth = dc.getTextWidthInPixels(iobValue, mainFont);
+        var iobUnitWidth = dc.getTextWidthInPixels("U", unitFont);
+        var middleWidth = dc.getTextWidthInPixels(middleValue, mainFont);
+        var eventualWidth = dc.getTextWidthInPixels(eventualString, mainFont);
         
         var iconSpacing = screenWidth * 0.015;
         var unitSpacing = screenWidth * 0.005;
@@ -121,16 +131,15 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         dc.drawText(
             iobLeftEdge,
             textY,
-            Graphics.FONT_MEDIUM,
+            mainFont,
             iobValue,
             Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
         );
         
-        var unitY = textY + (dc.getFontHeight(Graphics.FONT_XTINY)) * 0.2;
         dc.drawText(
             iobLeftEdge + iobWidth + unitSpacing,
             unitY,
-            Graphics.FONT_XTINY,
+            unitFont,
             "U",
             Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
         );
@@ -145,7 +154,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         dc.drawText(
             eventualRightEdge,
             textY,
-            Graphics.FONT_MEDIUM,
+            mainFont,
             eventualString,
             Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER
         );
@@ -167,7 +176,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
             dc.drawText(
                 textX,
                 textY,
-                Graphics.FONT_MEDIUM,
+                mainFont,
                 middleValue,
                 Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
             );
@@ -176,7 +185,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
                 isfIcon.locX = -100;
             }
             
-            var cobUnitWidth = dc.getTextWidthInPixels("g", Graphics.FONT_XTINY);
+            var cobUnitWidth = dc.getTextWidthInPixels("g", unitFont);
             var cobTotalWidth = middleWidth + unitSpacing + cobUnitWidth;
             var cobStartX = availableCenter - (cobTotalWidth / 2);
             
@@ -184,7 +193,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
             dc.drawText(
                 cobStartX,
                 textY,
-                Graphics.FONT_MEDIUM,
+                mainFont,
                 middleValue,
                 Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
             );
@@ -192,14 +201,14 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
             dc.drawText(
                 cobStartX + middleWidth + unitSpacing,
                 unitY,
-                Graphics.FONT_XTINY,
+                unitFont,
                 "g",
                 Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
             );
         }
     }
 
-    function drawHeaderSection(dc as Dc, status) as Void {
+    function drawMiddleSection(dc as Dc, status) as Void {
         var screenWidth = dc.getWidth();
         var screenHeight = dc.getHeight();
         var primaryColor = getApp().getProperty("PrimaryColor") as Number;
@@ -213,14 +222,20 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var loopMinutes = getLoopMinutes(status);
         var loopText = (loopMinutes < 0 ? "--" : loopMinutes.format("%d")) + "m";
         
-        var glucoseHeight = dc.getFontHeight(glucoseFont);
-        
         var glucoseWidth = dc.getTextWidthInPixels(glucoseText, glucoseFont);
         var deltaWidth = dc.getTextWidthInPixels(deltaText, deltaFont);
         var loopWidth = dc.getTextWidthInPixels(loopText, secondaryFont);
         
-        var baseY = screenHeight * 0.51;
-        var sideMargin = screenWidth * 0.005;
+        var glucoseHeight = dc.getFontHeight(glucoseFont);
+        var deltaHeight = dc.getFontHeight(deltaFont);
+        var loopHeight = dc.getFontHeight(secondaryFont);
+        
+        var glucoseDescent = dc.getFontDescent(glucoseFont);
+        var deltaDescent = dc.getFontDescent(deltaFont);
+        var loopDescent = dc.getFontDescent(secondaryFont);
+        
+        // Define target baseline position
+        var sideMargin = screenWidth * 0.02;
         var circleRadius = glucoseHeight * 0.4;
         var circlePenWidth = 4;
         
@@ -231,6 +246,19 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
             if (circlePenWidth > 6) { circlePenWidth = 6; }
         }
 
+        var targetBaseline = screenHeight * 0.5 + circleRadius;
+        
+        // Calculate VCENTER positions to align all baselines
+        var glucoseY = targetBaseline - (glucoseHeight - 2 * glucoseDescent) / 2;
+        var deltaY = targetBaseline - (deltaHeight - 2 * deltaDescent) / 2;
+        var loopY = targetBaseline - (loopHeight - 2 * loopDescent) / 2;
+        
+        if (screenWidth > 240) {
+            circlePenWidth = ((screenWidth * 0.015).toNumber());
+            circleRadius = glucoseHeight * 0.25;
+            if (circlePenWidth < 3) { circlePenWidth = 3; }
+            if (circlePenWidth > 6) { circlePenWidth = 6; }
+        }
         
         var elementSpacing = screenWidth * 0.015;
         var arrowWidth = screenWidth * 0.06;
@@ -238,7 +266,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(
             sideMargin,
-            baseY,
+            deltaY,
             deltaFont,
             deltaText,
             Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
@@ -252,14 +280,14 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(
             loopGroupStartX,
-            baseY,
+            loopY,
             secondaryFont,
             loopText,
             Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
         );
         
         var circleX = loopGroupStartX + loopWidth + elementSpacing + circleRadius + (circlePenWidth/2);
-        var circleY = baseY;
+        var circleY = screenHeight * 0.5;
         
         var loopColor = getLoopColor(loopMinutes);
         dc.setColor(loopColor, Graphics.COLOR_TRANSPARENT);
@@ -276,20 +304,20 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         dc.setColor(primaryColor, Graphics.COLOR_TRANSPARENT);
         dc.drawText(
             glucoseX,
-            baseY,
+            glucoseY,
             glucoseFont,
             glucoseText,
             Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER
         );
         
         var arrowX = glucoseX + glucoseWidth + elementSpacing;
-        var arrowY = baseY - arrowWidth / 2;
+        var arrowY = glucoseY - arrowWidth / 2;
         var arrowBitmap = getDirectionBitmap(status);
         if (arrowBitmap != null) {
             dc.drawBitmap(arrowX, arrowY, arrowBitmap);
         }
     }
-    
+
     function getGlucoseText(status) as String {
         if (status instanceof Dictionary) {
             var glucose = status["sgv"];
