@@ -35,6 +35,26 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
 
     function onUpdate(dc as Dc) as Void {
         var status = Application.Storage.getValue("status") as Dictionary;
+        
+        // DEBUG: Print what we received
+        System.println("=== DEBUG onUpdate ===");
+        if (status == null) {
+            System.println("ERROR: status is null!");
+        } else if (!(status instanceof Dictionary)) {
+            System.println("ERROR: status is not a Dictionary!");
+        } else {
+            System.println("Status data received:");
+            System.println("  sgv: " + status["sgv"]);
+            System.println("  delta: " + status["delta"]);
+            System.println("  direction: " + status["direction"]);
+            System.println("  date: " + status["date"]);
+            System.println("  eventualBG: " + status["eventualBG"]);
+            System.println("  iob: " + status["iob"]);
+            System.println("  cob: " + status["cob"]);
+            System.println("  sensRatio: " + status["sensRatio"]);
+            System.println("  units_hint: " + status["units_hint"]);
+        }
+        System.println("=== END DEBUG ===");
 
         setTime();
         setDate();
@@ -56,8 +76,28 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         View.onUpdate(dc);
         
         // NOW manually draw both the header and middle sections
-        drawHeaderSection(dc, status);  // NEW LINE - draws header manually
-        drawMiddleSection(dc, status);  // EXISTING - draws middle section
+        drawHeaderSection(dc, status);  // draws header manually
+        drawMiddleSection(dc, status);  // draws middle section
+    }
+    
+    // Helper function to check if units are mmol/L
+    function isMMOL(status) as Boolean {
+        if (status instanceof Dictionary) {
+            var unitsHint = status["units_hint"];
+            return (unitsHint != null && unitsHint.equals("mmol"));
+        }
+        return false;
+    }
+    
+    // Helper function to convert mg/dL to mmol/L if needed
+    function convertGlucoseValue(value, status) as Float {
+        if (value instanceof Number) {
+            if (isMMOL(status)) {
+                return value * 0.05556;
+            }
+            return value.toFloat();
+        }
+        return 0.0;
     }
     
     function drawMiddleSection(dc as Dc, status) as Void {
@@ -101,16 +141,15 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var middleWidth = dc.getTextWidthInPixels(middleString, Graphics.FONT_MEDIUM);
         var eventualWidth = dc.getTextWidthInPixels(eventualString, Graphics.FONT_MEDIUM);
         
-        // Calculate positions with 2% margins instead of 5%
+        // Calculate positions with 2% margins
         var iconSpacing = screenWidth * 0.005;
-        var margin = screenWidth * 0.02; // Reduced from 0.05 to 0.02
+        var margin = screenWidth * 0.02;
         
-        var iobLeftEdge = margin; // 2% from left edge
+        var iobLeftEdge = margin;
         var iobRightEdge = iobLeftEdge + iobWidth;
         
-        var eventualRightEdge = screenWidth - margin; // 2% from right edge (98% position)
+        var eventualRightEdge = screenWidth - margin;
         var eventualIconWidth = screenWidth * 0.06;
-        // Position icon much closer - just the width of the text plus small gap
         var eventualIconLeftEdge = eventualRightEdge - eventualWidth - iconSpacing - eventualIconWidth;
 
         // Position eventual icon
@@ -127,19 +166,15 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         
         if (showingSensRatio) {
             // For sensRatio: icon + text should be centered as a unit
-            // Calculate total width of icon + spacing + text
             var totalUnitWidth = isfIconWidth + iconSpacing + middleWidth;
             
-            // Position icon at the start of the centered unit
             if (isfIcon != null) {
                 isfIcon.locX = availableCenter - (totalUnitWidth / 2);
                 isfIcon.locY = iconY;
             }
             
-            // Text position is after icon + spacing
             var textX = availableCenter - (totalUnitWidth / 2) + isfIconWidth + iconSpacing + (middleWidth / 2);
             
-            // Manually draw the middle text at the calculated position
             dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_TRANSPARENT);
             dc.drawText(
                 textX,
@@ -150,12 +185,10 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
             );
         } else {
             // For COB: no icon, yellow text, centered directly
-            // Hide the ISF icon
             if (isfIcon != null) {
-                isfIcon.locX = -100; // Move off screen to hide it
+                isfIcon.locX = -100; // Move off screen
             }
             
-            // Draw COB text in yellow at the available center
             dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
             dc.drawText(
                 availableCenter,
@@ -167,17 +200,13 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         }
     }
 
-// Add this function to your existing TrioWatchfaceView.mc file
-// This goes right after your drawMiddleSection function
-
     function drawHeaderSection(dc as Dc, status) as Void {
         var screenWidth = dc.getWidth();
         var screenHeight = dc.getHeight();
         var primaryColor = getApp().getProperty("PrimaryColor") as Number;
         
-        // Keep font sizes smaller - FONT_NUMBER_MILD for all watch sizes
         var glucoseFont = Graphics.FONT_NUMBER_MILD;
-        var deltaFont = Graphics.FONT_MEDIUM;  // One size smaller than NUMBER_MILD
+        var deltaFont = Graphics.FONT_MEDIUM;
         var secondaryFont = Graphics.FONT_TINY;
         
         // Get text values
@@ -196,22 +225,21 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var deltaWidth = dc.getTextWidthInPixels(deltaText, deltaFont);
         var loopWidth = dc.getTextWidthInPixels(loopText, secondaryFont);
         
-        // Dynamic positioning and sizing based on screen size
+        // Dynamic positioning based on screen size
         var baseY;
         var sideMargin;
         var circleRadius;
         var circlePenWidth;
         
-        if (screenWidth <= 240) { // Fenix 5 and similar small screens
-            baseY = screenHeight * 0.25; // Lower position to avoid time overlap
-            sideMargin = screenWidth * 0.08; // More margin (8% vs 6%)
-            circleRadius = glucoseHeight * 0.35; // Bigger circle
-            circlePenWidth = 4; // Fixed 4px for small screens
-        } else { // Larger screens (Enduro 3, newer watches)
-            baseY = screenHeight * 0.2; // Position works fine for larger screens
-            sideMargin = screenWidth * 0.06; // Standard margin
-            circleRadius = glucoseHeight * 0.2; // Standard circle size
-            // Simple integer conversion without Math.round
+        if (screenWidth <= 240) {
+            baseY = screenHeight * 0.25;
+            sideMargin = screenWidth * 0.08;
+            circleRadius = glucoseHeight * 0.35;
+            circlePenWidth = 4;
+        } else {
+            baseY = screenHeight * 0.2;
+            sideMargin = screenWidth * 0.06;
+            circleRadius = glucoseHeight * 0.2;
             circlePenWidth = ((screenWidth * 0.018).toNumber());
             if (circlePenWidth < 4) { circlePenWidth = 4; }
             if (circlePenWidth > 8) { circlePenWidth = 8; }
@@ -236,14 +264,13 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         if (arrowBitmap != null) {
             dc.drawBitmap(arrowX, arrowY, arrowBitmap);
         }
-        var arrowWidth = screenWidth * 0.08; // Estimate arrow width
+        var arrowWidth = screenWidth * 0.08;
         
         // 3. Draw loop circle and time (right side - time BEFORE circle)
-        // Calculate right-aligned position for the GROUP (time + circle)
         var loopGroupWidth = loopWidth + elementSpacing + (circleRadius * 2) + circlePenWidth;
         var loopGroupStartX = screenWidth - sideMargin - loopGroupWidth;
         
-        // Draw loop time FIRST (on the left of circle)
+        // Draw loop time FIRST
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(
             loopGroupStartX,
@@ -264,7 +291,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         
         // 4. Draw delta (centered in remaining space)
         var deltaStartX = arrowX + arrowWidth + elementSpacing;
-        var deltaEndX = loopGroupStartX - elementSpacing;  // Use loopGroupStartX instead of circleX
+        var deltaEndX = loopGroupStartX - elementSpacing;
         var deltaCenterX = (deltaStartX + deltaEndX) / 2;
         
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
@@ -277,11 +304,18 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         );
     }
     
-    // Helper functions for header - add these if they don't exist
+    // Helper functions for header
     function getGlucoseText(status) as String {
         if (status instanceof Dictionary) {
-            var glucose = status["glucose"];
-            return (glucose == null) ? "--" : glucose.toString();
+            var glucose = status["sgv"];
+            if (glucose instanceof Number || glucose instanceof Float || glucose instanceof Double) {
+                var convertedValue = convertGlucoseValue(glucose, status);
+                if (isMMOL(status)) {
+                    return convertedValue.format("%2.1f");
+                } else {
+                    return convertedValue.format("%d");
+                }
+            }
         }
         return "--";
     }
@@ -289,7 +323,15 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
     function getDeltaText(status) as String {
         if (status instanceof Dictionary) {
             var delta = status["delta"];
-            return (delta == null) ? "--" : delta.toString();
+            if (delta instanceof Number || delta instanceof Float || delta instanceof Double) {
+                var convertedValue = convertGlucoseValue(delta, status);
+                var sign = (delta >= 0) ? "+" : "";
+                if (isMMOL(status)) {
+                    return sign + convertedValue.format("%2.1f");
+                } else {
+                    return sign + convertedValue.format("%d");
+                }
+            }
         }
         return "--";
     }
@@ -297,7 +339,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
     function getDirectionBitmap(status) as BitmapType {
         var bitmap = WatchUi.loadResource(Rez.Drawables.Unknown);
         if (status instanceof Dictionary) {
-            var trend = status["trendRaw"] as String;
+            var trend = status["direction"] as String;
             if (trend == null) {
                 return bitmap;
             }
@@ -333,15 +375,33 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
     
     function getLoopMinutes(status) as Number {
         if (status instanceof Dictionary) {
-            var lastLoopDate = status["lastLoopDateInterval"] as Number;
+            var lastLoopDate = status["date"];
             if (lastLoopDate == null) {
+                System.println("ERROR: date field is null");
                 return -1;
             }
             
-            var now = Time.now().value() as Number;
-            var deltaSeconds = now - lastLoopDate;
-            var min = (deltaSeconds > 0) ? ((deltaSeconds + 59) / 60) : 0;
-            return min;
+            // Convert to number first, then divide
+            var lastLoopMs = lastLoopDate.toLong();    // Handles large values
+            var lastLoopSeconds = lastLoopMs / 1000;
+            
+            var now = Time.now().value();
+            var deltaSeconds = now - lastLoopSeconds;
+            
+            System.println("Loop calculation:");
+            System.println("  lastLoopMs: " + lastLoopMs);
+            System.println("  lastLoopSeconds: " + lastLoopSeconds);
+            System.println("  now: " + now);
+            System.println("  deltaSeconds: " + deltaSeconds);
+            
+            if (deltaSeconds <= 0) {
+                return 0;
+            }
+            
+            // Force integer division by converting to long first
+            var minutes = (deltaSeconds / 60).toLong();
+            System.println("  minutes: " + minutes);
+            return minutes;
         }
         return -1;
     }
@@ -358,151 +418,13 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         }
     }
 
-     function setCOBorSensRatio(status) as Void {
-        var view = View.findDrawableById("COBLabel") as Text;
-        
-        if (status instanceof Dictionary) {
-            var sensRatio = status["sensRatio"];
-            var cob = status["cob"];
-            
-            // Priority to sensRatio if both exist
-            if (sensRatio != null) {
-                view.setText(getSensRatioString(status));
-                // Could update color here for sensRatio if desired
-                // view.setColor(Graphics.COLOR_GREEN);
-            } else if (cob != null) {
-                view.setText(getCOBString(status));
-                // view.setColor(Graphics.COLOR_YELLOW);
-            } else {
-                view.setText("--");
-            }
-        } else {
-            view.setText("--");
-        }
-    }
-
-    function adjustMiddleSectionPositions(dc as Dc, status) as Void {
-        var screenWidth = dc.getWidth();
-        var screenHeight = dc.getHeight();
-        
-        // Get font height to adjust icon positioning
-        var fontHeight = dc.getFontHeight(Graphics.FONT_MEDIUM);
-        
-        // Text is at 50% height, but icons need to be adjusted up by half font height
-        // to align their centers with the text baseline
-        var textY = screenHeight * 0.5;
-        var iconY = textY - (fontHeight * 0.3);
-        
-        // Get the views - cast icons as Bitmap
-        var iobLabel = View.findDrawableById("IOBLabel");
-        var cobLabel = View.findDrawableById("COBLabel"); // This label shows either COB or sensRatio
-        var isfIcon = View.findDrawableById("ISFIcon") as Bitmap;
-        var eventualLabel = View.findDrawableById("EventualBGLabel");
-        var eventualIcon = View.findDrawableById("EventualIcon") as Bitmap;
-        
-        // Get actual text values
-        var iobString = getIOBString(status);
-        var eventualString = getEventualBGString(status);
-        
-        // Determine if we're showing COB or sensRatio
-        var middleString = "";
-        var showingSensRatio = false;
-        
-        if (status instanceof Dictionary) {
-            var sensRatio = status["sensRatio"];
-            var cob = status["cob"];
-            
-            // Priority to sensRatio if both exist, or show whichever is available
-            if (sensRatio != null) {
-                middleString = getSensRatioString(status);
-                showingSensRatio = true;
-            } else if (cob != null) {
-                middleString = getCOBString(status);
-                showingSensRatio = false;
-            } else {
-                middleString = "--";
-            }
-        }
-        
-        // Calculate text widths
-        var iobWidth = dc.getTextWidthInPixels(iobString, Graphics.FONT_MEDIUM);
-        var middleWidth = dc.getTextWidthInPixels(middleString, Graphics.FONT_MEDIUM);
-        var eventualWidth = dc.getTextWidthInPixels(eventualString, Graphics.FONT_MEDIUM);
-        
-        // Define spacing
-        var iconSpacing = screenWidth * 0.04; // 2% space between icon and text
-        
-        // Position IOB (left-aligned at 5% margin)
-        var iobLeftEdge = screenWidth * 0.05;
-        if (iobLabel != null) {
-            iobLabel.locX = iobLeftEdge; // Left edge at 5% (since it's left-justified)
-        }
-        var iobRightEdge = iobLeftEdge + iobWidth;
-        
-        // Position Eventual BG first to know its icon position
-        var eventualRightEdge = screenWidth * 0.95;
-        var eventualIconWidth = screenWidth * 0.06; // 6% as defined in layout.xml
-        var eventualIconLeftEdge = eventualRightEdge - eventualWidth - eventualIconWidth;
-        
-        if (eventualLabel != null && eventualIcon != null) {
-            // Right-align the text at 95% of screen width
-            eventualLabel.locX = eventualRightEdge; // Right edge at 95% (since it's right-justified)
-            
-            // Position icon to the left of eventual BG text
-            eventualIcon.locX = eventualIconLeftEdge;
-            eventualIcon.locY = iconY; // Adjusted up by half font height
-        }
-        
-        // Now position middle element (COB or sensRatio) centered in the available space
-        // Available space is between IOB right edge and eventual BG icon left edge
-        var availableCenter = (iobRightEdge + eventualIconLeftEdge) / 2;
-        
-        // Debug: Let's verify the calculation
-        System.println("IOB right edge: " + iobRightEdge);
-        System.println("Eventual icon left edge: " + eventualIconLeftEdge);
-        System.println("Available center: " + availableCenter);
-        System.println("Screen center: " + (screenWidth / 2));
-        
-        if (cobLabel != null) {
-            // Set position FIRST, before setText
-            cobLabel.locX = availableCenter; // This should move it from screen center
-            
-            // Then set the text
-            cobLabel.setText(middleString); // Update text to either COB or sensRatio
-            
-            if (showingSensRatio) {
-                // For sensRatio: center position in available space with icon to its left
-                cobLabel.locX = availableCenter; // Center in available space
-                
-                // Position icon to the left of sensRatio text
-                if (isfIcon != null) {
-                    var isfIconWidth = screenWidth * 0.08; // 8% as defined in layout.xml
-                    isfIcon.locX = availableCenter - (middleWidth / 2) - iconSpacing - isfIconWidth;
-                    isfIcon.locY = iconY; // Adjusted up by half font height
-                }
-                
-            } else {
-                // For COB: icon on left, text on right, both centered in available space
-                if (isfIcon != null) {
-                    var iconWidth = screenWidth * 0.08; // 8% as defined in layout.xml
-                    var totalWidth = iconWidth + iconSpacing + middleWidth;
-                    var startX = availableCenter - (totalWidth / 2);
-                    
-                    isfIcon.locX = startX;
-                    isfIcon.locY = iconY; // Adjusted up by half font height
-                    cobLabel.locX = availableCenter; // Center in available space
-                }
-            }
-        }
-    }
-    
     function getIOBString(status) as String {
         if (status instanceof Dictionary) {
             var iob = status["iob"];
-            if (iob instanceof Number) {
+            if (iob instanceof Number || iob instanceof Float || iob instanceof Double) {
                 return iob.format("%2.1f") + "U";
             } else if (iob != null) {
-                return iob + "U";
+                return iob.toString() + "U";
             }
         }
         return "--";
@@ -510,9 +432,9 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
     
     function getCOBString(status) as String {
         if (status instanceof Dictionary) {
-            var cob = status["cob"]; // actual COB value
-            if (cob instanceof Number) {
-                return cob.format("%3d") + "g";
+            var cob = status["cob"];
+            if (cob instanceof Number || cob instanceof Float || cob instanceof Double) {
+                return cob.format("%d") + "g";
             } else if (cob != null) {
                 return cob.toString() + "g";
             }
@@ -522,9 +444,9 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
     
     function getSensRatioString(status) as String {
         if (status instanceof Dictionary) {
-            var sensRatio = status["sensRatio"]; // sensRatio value
-            if (sensRatio instanceof Number) {
-                return sensRatio.format("%2.1f");
+            var sensRatio = status["sensRatio"];
+            if (sensRatio instanceof Number || sensRatio instanceof Float || sensRatio instanceof Double) {
+                return sensRatio.format("%2.2f");
             } else if (sensRatio != null) {
                 return sensRatio.toString();
             }
@@ -534,18 +456,20 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
     
     function getEventualBGString(status) as String {
         if (status instanceof Dictionary) {
-            var ebg = status["eventualBGRaw"];
-            if (ebg instanceof Number) {
-                return ebg.format("%d");
-            } else if (ebg != null) {
-                return ebg.toString();
+            var ebg = status["eventualBG"];
+            if (ebg instanceof Number || ebg instanceof Float || ebg instanceof Double) {
+                var convertedValue = convertGlucoseValue(ebg, status);
+                if (isMMOL(status)) {
+                    return convertedValue.format("%2.1f");
+                } else {
+                    return convertedValue.format("%d");
+                }
             }
         }
         return "--";
     }
 
     function setTime() as Void {
-        // Get the current time and format it correctly
         var timeFormat = "$1$:$2$";
         var clockTime = System.getClockTime();
         var hours = clockTime.hour;
@@ -555,7 +479,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
                 suffix = " PM";
                 if (hours > 12) {
                     hours = hours - 12;
-                    }
+                }
             } else {
                 suffix = " AM";
             }
@@ -565,7 +489,6 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         }
         var timeString = Lang.format(timeFormat + suffix, [hours, clockTime.min.format("%02d")]);
 
-        // Update the view
         var view = View.findDrawableById("TimeLabel") as TextArea;
         view.setColor(getApp().getProperty("PrimaryColor") as Number);
         view.setText(timeString);
@@ -574,7 +497,6 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
     function setDate() as Void {
         var now = Time.now();
         var info = Calendar.info(now, Time.FORMAT_MEDIUM);
-        // var dateStr = info.day_of_week.substring(0,3) + " " + info.day + "." info.month + ".";
         var dateStr = Lang.format("$1$ $2$.$3$", [info.day_of_week, info.day, info.month]);
 
         var view = View.findDrawableById("DateLabel") as TextArea;
@@ -593,7 +515,6 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
     }
 
     function setSteps() as Void {
-
         var myStats = System.getSystemStats();
         var batlevel = myStats.battery;
         var batString = Lang.format( "$1$%", [ batlevel.format( "%2d" ) ] );
@@ -611,28 +532,18 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         view.setText(getIOBString(status));
     }
 
-    function setCOB(status) as Void {
-        var view = View.findDrawableById("COBLabel") as Text;
-        view.setText(getCOBString(status));
-    }
-
     function setEventualBG(status) as Void {
         var view = View.findDrawableById("EventualBGLabel") as Text;
         view.setColor(getApp().getProperty("PrimaryColor") as Number);
         view.setText(getEventualBGString(status));
     }
 
-    // Called when this View is removed from the screen. Save the
-    // state of this View here. This includes freeing resources from
-    // memory.
     function onHide() as Void {
     }
 
-    // The user has just looked at their watch. Timers and animations may be started here.
     function onExitSleep() as Void {
     }
 
-    // Terminate any active timers and prepare for slow updates.
     function onEnterSleep() as Void {
     }
 }
