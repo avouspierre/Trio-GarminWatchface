@@ -1,6 +1,11 @@
 # Garmin Watch watchface
 
-The repository contains the watchface for Garmin usable with Trio system. 
+The repository contains the watchface for Garmin usable with Trio system.
+
+| Data Type | mgdl (Fenix8) | mmol (Fenix6) |
+| --- | --- | --- |
+| COB | <img src="https://github.com/mountrcg/Trio-GarminWatchface/blob/main/Watchface-COB.png" width="300"> | <img src="https://github.com/mountrcg/Trio-GarminWatchface/blob/main/Watchface-COB_mmol.png" width="300"> |
+| SensRatio | <img src="https://github.com/mountrcg/Trio-GarminWatchface/blob/main/Watchface-Sens.png" width="300"> | <img src="https://github.com/mountrcg/Trio-GarminWatchface/blob/main/Watchface-Sens_mmol.png" width="300"> |
 
 ## How to use 
 
