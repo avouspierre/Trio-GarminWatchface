@@ -41,11 +41,11 @@ build:
 buildall:
 	@for device in $(devices); do \
 		echo "-----"; \
-		echo "Building for" $device; \
+		echo "Building for" $$device; \
 		"$(SDK_HOME)/bin/monkeyc" \
 		--jungles ./monkey.jungle \
-		--device $device \
-		--output bin/$(appName)-$device.prg \
+		--device $$device \
+		--output bin/$(appName)-$$device.prg \
 		--private-key $(PRIVATE_KEY) \
 		--warn; \
 	done
