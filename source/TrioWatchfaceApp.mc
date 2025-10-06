@@ -46,7 +46,7 @@ class TrioWatchfaceApp extends Application.AppBase {
 
 
         // Simulate data for testing in the simulator - mg/dL units
-        var sampleDataMgdl = {
+        var sampleData = {
             "date" => lastLoopDateMs,
             "sgv" => 244,
             "delta" => -27,
@@ -61,8 +61,7 @@ class TrioWatchfaceApp extends Application.AppBase {
         } as Dictionary;
 
         // Store the sample data (uncomment one to test)
-        // Application.Storage.setValue("status", sampleDataMgdl);
-        Application.Storage.setValue("status", sampleDataMgdl);
+        //Application.Storage.setValue("status", sampleData);
     }
 
     function onBackgroundData(data) {
