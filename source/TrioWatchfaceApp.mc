@@ -41,7 +41,7 @@ class TrioWatchfaceApp extends Application.AppBase {
 
         // Get the current Unix time in milliseconds (matching new structure)
         var now = Time.now().value();
-        var fourMinutesAgo = now - (4 * 60); // 4 minutes ago in seconds
+        var fourMinutesAgo = now - (30); // 4 minutes ago in seconds
         var lastLoopDateMs = fourMinutesAgo.toLong() * 1000; // Use Long to avoid overflow
 
 

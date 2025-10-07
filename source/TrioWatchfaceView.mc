@@ -220,8 +220,17 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var glucoseText = getGlucoseText(status);
         var deltaText = getDeltaText(status);
         var loopMinutes = getLoopMinutes(status);
-        var loopText = (loopMinutes < 0 ? "--" : loopMinutes.format("%d")) + "m";
-        
+                
+        // Format loop text: show "<1m" for 0 minutes
+        var loopText;
+        if (loopMinutes < 0) {
+            loopText = "--m";
+        } else if (loopMinutes == 0) {
+            loopText = "<1m";
+        } else {
+            loopText = loopMinutes.format("%d") + "m";
+        }
+
         var glucoseWidth = dc.getTextWidthInPixels(glucoseText, glucoseFont);
         var deltaWidth = dc.getTextWidthInPixels(deltaText, deltaFont);
         var loopWidth = dc.getTextWidthInPixels(loopText, secondaryFont);
