@@ -65,29 +65,26 @@ class TrioWatchfaceApp extends Application.AppBase {
     }
 
     function onBackgroundData(data) {
-       if (data instanceof Number || data == null) {
-                 System.println("Not a dictionary");
+        if (data instanceof Number || data == null) {
+            System.println("Not a dictionary");
         } else {
-                   System.println("try to update the status");
-                   if (Background has :registerForPhoneAppMessageEvent) {
-                        System.println("updated with registerForPhoneAppMessageEvent");
-                        // Application.Storage.setValue("status", data as Dictionary);
-                    } else {
-                        System.println("update status");
-                        Application.Storage.setValue("status", data as Dictionary);
-                        Background.registerForTemporalEvent(new Time.Duration(5 * 60));
-                    }
-            }
-         System.println("requestUpdate");
-         WatchUi.requestUpdate();
+            System.println("update status");
+            // Always store the data regardless of device type
+            Application.Storage.setValue("status", data as Dictionary);
+        }
+        
+        // Always re-register temporal event to keep the update chain alive
+        Background.registerForTemporalEvent(new Time.Duration(5 * 60));
+        System.println("requestUpdate");
+        WatchUi.requestUpdate();
     }
 
     // onStop() is called when your application is exiting
     function onStop(state as Dictionary?) as Void {
-        if(!inBackground) {
-            System.println("stop temp event");
-    		Background.deleteTemporalEvent();
-    	}
+        // Don't delete temporal events when switching watchfaces
+        // They should continue running in the background
+        // The system will clean up when truly necessary
+        System.println("onStop called, inBackground=" + inBackground);
     }
 
     // Return the initial view of your application here

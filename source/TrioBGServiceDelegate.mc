@@ -39,7 +39,8 @@ class TrioBGServiceDelegate extends System.ServiceDelegate {
     function onTemporalEvent() {
         System.println("Temp event");
         Communications.transmit("status", null, new CommsRelay(method(:onTransmitComplete)));
-        Background.exit(null);
+        // Don't exit immediately - wait for callback to complete
+        // Background.exit will be called in onTransmitComplete
     }
 
     function onPhoneAppMessage(msg) {
@@ -55,6 +56,7 @@ class TrioBGServiceDelegate extends System.ServiceDelegate {
         } else {
             System.println("Listener onError");
         }
+        // Exit after callback completes, giving phone app time to respond
         Background.exit(isSuccess);
     }
 }
