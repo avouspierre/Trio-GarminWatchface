@@ -39,29 +39,37 @@ class TrioWatchfaceApp extends Application.AppBase {
             System.println("****background not available on this device****");
         }
 
-        // Get the current Unix time in milliseconds (matching new structure)
+        // Get the current Unix time
         var now = Time.now().value();
-        var fourMinutesAgo = now - (30); // 4 minutes ago in seconds
-        var lastLoopDateMs = fourMinutesAgo.toLong() * 1000; // Use Long to avoid overflow
+        var fourMinutesAgo = now - 240; // 4 minutes ago in seconds
 
-
-        // Simulate data for testing in the simulator - mg/dL units
+        // Simulate data for testing in the simulator - using original string format
         var sampleData = {
-            "date" => lastLoopDateMs,
-            "sgv" => 244,
-            "delta" => -27,
-            "direction" => "DoubleUp",
-            "units_hint" => "mgdl",
-            "iob" => 10.9,
-            "tbr" => 210,
-            "cob" => 20.0,
-            "eventualBG" => 85,
-            "isf" => 100,
-            //"sensRatio" => 0.9
+            "glucose" => "244",
+            "trendRaw" => "DoubleUp", 
+            "delta" => "-27",
+            "iob" => "10.9",
+            "cob" => "20",
+            "lastLoopDateInterval" => fourMinutesAgo,
+            "eventualBGRaw" => "85",
+            "isf" => "100",
+            //"sensRatio" => "0.9"
+        } as Dictionary;
+
+        var sampleDataMmol = {
+            "glucose" => "10.8",
+            "trendRaw" => "DoubleUp", 
+            "delta" => "-4.8",
+            "iob" => "10.9",
+            "cob" => "20",
+            "lastLoopDateInterval" => fourMinutesAgo,
+            "eventualBGRaw" => "12.9",
+            "isf" => "4.9",
+            "sensRatio" => "0.9"
         } as Dictionary;
 
         // Store the sample data (uncomment one to test)
-        //Application.Storage.setValue("status", sampleData);
+        //Application.Storage.setValue("status", sampleDataMmol);
     }
 
     function onBackgroundData(data) {

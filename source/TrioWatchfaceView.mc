@@ -43,24 +43,6 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         drawMiddleSection(dc, status);
     }
     
-    function isMMOL(status) as Boolean {
-        if (status instanceof Dictionary) {
-            var unitsHint = status["units_hint"];
-            return (unitsHint != null && unitsHint.equals("mmol"));
-        }
-        return false;
-    }
-    
-    function convertGlucoseValue(value, status) as Float {
-        if (value instanceof Number) {
-            if (isMMOL(status)) {
-                return value * 0.05556;
-            }
-            return value.toFloat();
-        }
-        return 0.0;
-    }
-    
     function drawTopSection(dc as Dc, status) as Void {
         var screenWidth = dc.getWidth();
         var screenHeight = dc.getHeight();
@@ -329,14 +311,9 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
 
     function getGlucoseText(status) as String {
         if (status instanceof Dictionary) {
-            var glucose = status["sgv"];
-            if (glucose instanceof Number || glucose instanceof Float || glucose instanceof Double) {
-                var convertedValue = convertGlucoseValue(glucose, status);
-                if (isMMOL(status)) {
-                    return convertedValue.format("%2.1f");
-                } else {
-                    return convertedValue.format("%d");
-                }
+            var glucose = status["glucose"];
+            if (glucose != null) {
+                return glucose.toString();
             }
         }
         return "--";
@@ -345,14 +322,8 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
     function getDeltaText(status) as String {
         if (status instanceof Dictionary) {
             var delta = status["delta"];
-            if (delta instanceof Number || delta instanceof Float || delta instanceof Double) {
-                var convertedValue = convertGlucoseValue(delta, status);
-                var sign = (delta >= 0) ? "+" : "";
-                if (isMMOL(status)) {
-                    return sign + convertedValue.format("%2.1f");
-                } else {
-                    return sign + convertedValue.format("%d");
-                }
+            if (delta != null) {
+                return delta.toString();
             }
         }
         return "--";
@@ -361,7 +332,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
     function getDirectionBitmap(status) as BitmapType {
         var bitmap = WatchUi.loadResource(Rez.Drawables.Unknown);
         if (status instanceof Dictionary) {
-            var trend = status["direction"] as String;
+            var trend = status["trendRaw"] as String;
             if (trend == null) {
                 return bitmap;
             }
@@ -397,13 +368,13 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
     
     function getLoopMinutes(status) as Number {
         if (status instanceof Dictionary) {
-            var lastLoopDate = status["date"];
+            var lastLoopDate = status["lastLoopDateInterval"];
             if (lastLoopDate == null) {
                 return -1;
             }
             
-            var lastLoopMs = lastLoopDate.toLong();
-            var lastLoopSeconds = lastLoopMs / 1000;
+            // lastLoopDateInterval is already in seconds
+            var lastLoopSeconds = lastLoopDate.toLong();
             
             var now = Time.now().value();
             var deltaSeconds = now - lastLoopSeconds;
@@ -433,9 +404,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
     function getIOBValue(status) as String {
         if (status instanceof Dictionary) {
             var iob = status["iob"];
-            if (iob instanceof Number || iob instanceof Float || iob instanceof Double) {
-                return iob.format("%2.1f");
-            } else if (iob != null) {
+            if (iob != null) {
                 return iob.toString();
             }
         }
@@ -445,9 +414,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
     function getCOBValue(status) as String {
         if (status instanceof Dictionary) {
             var cob = status["cob"];
-            if (cob instanceof Number || cob instanceof Float || cob instanceof Double) {
-                return cob.format("%d");
-            } else if (cob != null) {
+            if (cob != null) {
                 return cob.toString();
             }
         }
@@ -457,9 +424,7 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
     function getSensRatioString(status) as String {
         if (status instanceof Dictionary) {
             var sensRatio = status["sensRatio"];
-            if (sensRatio instanceof Number || sensRatio instanceof Float || sensRatio instanceof Double) {
-                return sensRatio.format("%2.2f");
-            } else if (sensRatio != null) {
+            if (sensRatio != null) {
                 return sensRatio.toString();
             }
         }
@@ -468,14 +433,9 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
     
     function getEventualBGString(status) as String {
         if (status instanceof Dictionary) {
-            var ebg = status["eventualBG"];
-            if (ebg instanceof Number || ebg instanceof Float || ebg instanceof Double) {
-                var convertedValue = convertGlucoseValue(ebg, status);
-                if (isMMOL(status)) {
-                    return convertedValue.format("%2.1f");
-                } else {
-                    return convertedValue.format("%d");
-                }
+            var ebg = status["eventualBGRaw"];
+            if (ebg != null) {
+                return ebg.toString();
             }
         }
         return "--";
