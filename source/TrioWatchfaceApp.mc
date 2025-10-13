@@ -1,10 +1,11 @@
 //**********************************************************************
-// DESCRIPTION : Watch Faces for Trio
+// DESCRIPTION : Watch Faces for Trio - Optimized Version
 // AUTHORS :
 //          Created by ivalkou - https://github.com/ivalkou
 //          Modify by Pierre Lagarde - https://github.com/avouspierre
 // COPYRIGHT : (c) 2023 ivalkou / Lagarde
 //
+// OPTIMIZED: 320s backup timer, reset on data receive
 
 import Toybox.Application;
 import Toybox.Lang;
@@ -27,7 +28,8 @@ class TrioWatchfaceApp extends Application.AppBase {
     function onStart(state as Dictionary?) as Void {
         //register for temporal events if they are supported
         if(Toybox.System has :ServiceDelegate) {
-            Background.registerForTemporalEvent(new Time.Duration(5 * 60));
+            // OPTIMIZED: Changed from 300s to 320s for backup sync
+            Background.registerForTemporalEvent(new Time.Duration(320));
             if (Background has :registerForPhoneAppMessageEvent) {
                 Background.registerForPhoneAppMessageEvent();
                 System.println("****background is ok****");
@@ -73,21 +75,26 @@ class TrioWatchfaceApp extends Application.AppBase {
     }
 
     function onBackgroundData(data) {
-       if (data instanceof Number || data == null) {
-                 System.println("Not a dictionary");
+        if (data instanceof Number || data == null) {
+            System.println("Not a dictionary");
         } else {
-                   System.println("try to update the status");
-                   if (Background has :registerForPhoneAppMessageEvent) {
-                        System.println("updated with registerForPhoneAppMessageEvent");
-                        // Application.Storage.setValue("status", data as Dictionary);
-                    } else {
-                        System.println("update status");
-                        Application.Storage.setValue("status", data as Dictionary);
-                        Background.registerForTemporalEvent(new Time.Duration(5 * 60));
-                    }
+            System.println("try to update the status");
+            
+            // OPTIMIZED: ALWAYS reset timer when valid data is received
+            Background.deleteTemporalEvent(); // Delete old timer
+            Background.registerForTemporalEvent(new Time.Duration(320)); // Register new 320s timer
+            
+            if (Background has :registerForPhoneAppMessageEvent) {
+                System.println("updated with registerForPhoneAppMessageEvent");
+                // Modern devices: data is already handled via onPhoneAppMessage
+            } else {
+                System.println("update status");
+                Application.Storage.setValue("status", data as Dictionary);
             }
-         System.println("requestUpdate");
-         WatchUi.requestUpdate();
+        }
+        
+        System.println("requestUpdate");
+        WatchUi.requestUpdate();
     }
 
     // onStop() is called when your application is exiting
