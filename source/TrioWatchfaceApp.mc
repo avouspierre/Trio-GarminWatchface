@@ -1,10 +1,11 @@
 //**********************************************************************
-// DESCRIPTION : Watch Faces for Trio
+// DESCRIPTION : Watch Faces for Trio - Optimized Version
 // AUTHORS :
 //          Created by ivalkou - https://github.com/ivalkou
 //          Modify by Pierre Lagarde - https://github.com/avouspierre
 // COPYRIGHT : (c) 2023 ivalkou / Lagarde
 //
+// OPTIMIZED: 320s backup timer, reset on data receive
 
 import Toybox.Application;
 import Toybox.Lang;
@@ -27,8 +28,8 @@ class TrioWatchfaceApp extends Application.AppBase {
     function onStart(state as Dictionary?) as Void {
         //register for temporal events if they are supported
         if(Toybox.System has :ServiceDelegate) {
-            // canDoBG=true;
-            Background.registerForTemporalEvent(new Time.Duration(5 * 60));
+            // OPTIMIZED: Changed from 300s to 320s for backup sync
+            Background.registerForTemporalEvent(new Time.Duration(320));
             if (Background has :registerForPhoneAppMessageEvent) {
                 Background.registerForPhoneAppMessageEvent();
                 System.println("****background is ok****");
@@ -41,56 +42,59 @@ class TrioWatchfaceApp extends Application.AppBase {
         }
 
         // Get the current Unix time
-        var now = Time.now().value() as Number;
+        var now = Time.now().value();
+        var fourMinutesAgo = now - 240; // 4 minutes ago in seconds
 
-        // Subtract x minutes (x * 60 seconds) to get the timestamp for x minutes ago
-        var lastLoopDateInterval = now - (4 * 60);
-
-        // Simulate data for testing in the simulator
+        // Simulate data for testing in the simulator - using original string format
         var sampleData = {
-            "glucose" => "90",
-            "lastLoopDateInterval" => lastLoopDateInterval,
-            "delta" => "-10",
-            "iob" => "-2.1",
-            "cob" => "270",
-            "isf" => "66.1",
-            "sensRatio" => "0.65",
-            "eventualBGRaw" => "66",
-            "trendRaw" => "FortyFiveDown"
+            "glucose" => "244",
+            "trendRaw" => "DoubleUp", 
+            "delta" => "-27",
+            "iob" => "10.9",
+            "cob" => "20",
+            "lastLoopDateInterval" => fourMinutesAgo,
+            "eventualBGRaw" => "85",
+            "isf" => "100",
+            //"sensRatio" => "0.9"
         } as Dictionary;
 
-        var mmollsampleData = {
-            "glucose" => "10.9",
-            "lastLoopDateInterval" => lastLoopDateInterval,
-            "delta" => "-2.3",
-            "iob" => "2.9",
-            "cob" => "70.2",
-            "isf" => "3.7",
-            "sensRatio" => "1.63",
-            "eventualBGRaw" => "9.9",
-            "trendRaw" => "FortyFiveDown"
+        var sampleDataMmol = {
+            "glucose" => "10.8",
+            "trendRaw" => "DoubleUp", 
+            "delta" => "-4.8",
+            "iob" => "10.9",
+            "cob" => "20",
+            "lastLoopDateInterval" => fourMinutesAgo,
+            "eventualBGRaw" => "12.9",
+            "isf" => "4.9",
+            "sensRatio" => "0.9"
         } as Dictionary;
 
-        // Store the sample data
+        // Store the sample data (uncomment one to test)
         //Application.Storage.setValue("status", sampleData);
     }
 
     function onBackgroundData(data) {
-       if (data instanceof Number || data == null) {
-                 System.println("Not a dictionary");
+        if (data instanceof Number || data == null) {
+            System.println("Not a dictionary");
         } else {
-                   System.println("try to update the status");
-                   if (Background has :registerForPhoneAppMessageEvent) {
-                        System.println("updated with registerForPhoneAppMessageEvent");
-                        // Application.Storage.setValue("status", data as Dictionary);
-                    } else {
-                        System.println("update status");
-                        Application.Storage.setValue("status", data as Dictionary);
-                        Background.registerForTemporalEvent(new Time.Duration(5 * 60));
-                    }
+            System.println("try to update the status");
+            
+            // OPTIMIZED: ALWAYS reset timer when valid data is received
+            Background.deleteTemporalEvent(); // Delete old timer
+            Background.registerForTemporalEvent(new Time.Duration(320)); // Register new 320s timer
+            
+            if (Background has :registerForPhoneAppMessageEvent) {
+                System.println("updated with registerForPhoneAppMessageEvent");
+                // Modern devices: data is already handled via onPhoneAppMessage
+            } else {
+                System.println("update status");
+                Application.Storage.setValue("status", data as Dictionary);
             }
-         System.println("requestUpdate");
-         WatchUi.requestUpdate();
+        }
+        
+        System.println("requestUpdate");
+        WatchUi.requestUpdate();
     }
 
     // onStop() is called when your application is exiting
