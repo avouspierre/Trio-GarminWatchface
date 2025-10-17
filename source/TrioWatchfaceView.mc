@@ -90,6 +90,9 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
             } else {
                 middleValue = "--";
             }
+        } else {
+            // No status data at all (e.g., right after installation)
+            middleValue = "--";
         }
         
         var iobWidth = dc.getTextWidthInPixels(iobValue, mainFont);
