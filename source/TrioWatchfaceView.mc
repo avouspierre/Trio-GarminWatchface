@@ -231,10 +231,10 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var circlePenWidth = 4;
         
         if (screenWidth > 240) {
-            circlePenWidth = ((screenWidth * 0.015).toNumber());
+            circlePenWidth = ((screenWidth * 0.025).toNumber());
             circleRadius = glucoseHeight * 0.25;
             if (circlePenWidth < 3) { circlePenWidth = 3; }
-            if (circlePenWidth > 6) { circlePenWidth = 6; }
+            if (circlePenWidth > 7) { circlePenWidth = 7; }
         }
 
         var targetBaseline = screenHeight * 0.5 + circleRadius;
@@ -243,13 +243,6 @@ class TrioWatchfaceView extends WatchUi.WatchFace {
         var glucoseY = targetBaseline - (glucoseHeight - 2 * glucoseDescent) / 2;
         var deltaY = targetBaseline - (deltaHeight - 2 * deltaDescent) / 2;
         var loopY = targetBaseline - (loopHeight - 2 * loopDescent) / 2;
-        
-        if (screenWidth > 240) {
-            circlePenWidth = ((screenWidth * 0.015).toNumber());
-            circleRadius = glucoseHeight * 0.25;
-            if (circlePenWidth < 3) { circlePenWidth = 3; }
-            if (circlePenWidth > 6) { circlePenWidth = 6; }
-        }
         
         var elementSpacing = screenWidth * 0.015;
         var arrowWidth = screenWidth * 0.06;
