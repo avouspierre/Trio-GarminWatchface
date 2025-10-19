@@ -48,7 +48,7 @@ class TrioWatchfaceApp extends Application.AppBase {
 
         // Simulate data for testing in the simulator
         var sampleData = {
-            "glucose" => "188",
+            "glucose" => "30",
             "lastLoopDateInterval" => lastLoopDateInterval,
             "delta" => "-20",
             "iob" => "-0.1",

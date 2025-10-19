@@ -11,20 +11,41 @@ import Toybox.Graphics;
 import Toybox.WatchUi;
 import Toybox.Application;
 import Toybox.Time;
+import Sura.Device;
 
 class HeaderDrawable extends WatchUi.Drawable {
+
+    var BGGraph as ArcGoalView;
     function initialize() {
         var dictionary = {
             :identifier => "HeaderDrawable"
         };
 
         Drawable.initialize(dictionary);
+
+        self.BGGraph = new ArcGoalView({
+            :direction => Graphics.ARC_CLOCKWISE,
+            :color => Graphics.COLOR_DK_BLUE,
+            :position => "top",
+        });
     }
 
     function draw(dc as Dc) as Void {
         if(dc has :setAntiAlias) {
             dc.setAntiAlias(true);
         }
+
+
+        Device.init(dc);
+
+        var arcGraphRadius = Device.screenCenter.getMin() - 8;
+            self.BGGraph.setPosition(
+            Device.screenCenter.x,
+            Device.screenCenter.x
+        );
+        self.BGGraph.setRadius(arcGraphRadius);
+
+
         var width = dc.getWidth() as Number;
         var height = dc.getHeight() as Number;
         var primaryColor = getApp().getProperty("PrimaryColor") as Number;
@@ -36,8 +57,8 @@ class HeaderDrawable extends WatchUi.Drawable {
         var deltaHeight = dc.getFontHeight(Graphics.FONT_TINY) as Number;
         var deltaWidth = dc.getTextWidthInPixels(deltaText, Graphics.FONT_TINY) as Number;
 
-        var glucoseX = width * 0.07;
-        var glucoseY = (height * 0.22);
+        var glucoseX = width * 0.35;
+        var glucoseY = (height * 0.1);
 
         dc.setColor(primaryColor, Graphics.COLOR_TRANSPARENT);
         // dc.drawText(glucoseX, glucoseY - glucoseHeight, Graphics.FONT_NUMBER_MILD, glucoseText, Graphics.TEXT_JUSTIFY_LEFT);
@@ -45,7 +66,7 @@ class HeaderDrawable extends WatchUi.Drawable {
 
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
 
-        dc.drawText(glucoseX  + glucoseWidth + width * 0.02,
+        dc.drawText(glucoseX  + glucoseWidth + width * 0.03,
             glucoseY + (glucoseHeight - deltaHeight) * 0.5,
             Graphics.FONT_SYSTEM_TINY,
             deltaText,
@@ -53,25 +74,29 @@ class HeaderDrawable extends WatchUi.Drawable {
 
 
         //fenix 5 not display
-        dc.drawBitmap(glucoseX  + glucoseWidth + deltaWidth + width * 0.06, glucoseY + glucoseHeight/3, getDirection(status));
+        //dc.drawBitmap(glucoseX  + glucoseWidth + deltaWidth + width * 0.06, glucoseY + glucoseHeight/3, getDirection(status));
 
-        var min = getMinutes(status);
-        var loopColor = getLoopColor(min);
+        // var min = getMinutes(status);
+        // var loopColor = getLoopColor(min);
 
-        dc.setColor(loopColor, Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(6);
-       // dc.drawCircle(width * 0.55 + glucoseHeight * 0.3, glucoseY + glucoseHeight / 2, glucoseHeight * 0.3);
-        dc.drawCircle(width * 0.78 + glucoseHeight * 0.3, glucoseY + glucoseHeight / 2 - 0.03 * height, glucoseHeight * 0.3);
+    //     dc.setColor(loopColor, Graphics.COLOR_TRANSPARENT);
+    //     dc.setPenWidth(6);
+    //    // dc.drawCircle(width * 0.55 + glucoseHeight * 0.3, glucoseY + glucoseHeight / 2, glucoseHeight * 0.3);
+    //     dc.drawCircle(width * 0.78 + glucoseHeight * 0.3, glucoseY + glucoseHeight / 2 - 0.03 * height, glucoseHeight * 0.3);
 
-        var loopString = (min < 0 ? "--" : min.format("%d")) + "m";
-        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        // dc.drawText(width * 0.85,
-        //fenix 5 --> change 0.4 by 0.45
-        dc.drawText(width * 0.75,
-            glucoseY + (glucoseHeight - deltaHeight) * 0.5,
-            Graphics.FONT_TINY,
-            loopString,
-            Graphics.TEXT_JUSTIFY_RIGHT);
+        // var loopString = (min < 0 ? "--" : min.format("%d")) + "m";
+        // dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+        // // dc.drawText(width * 0.85,
+        // //fenix 5 --> change 0.4 by 0.45
+        // dc.drawText(width * 0.75,
+        //     glucoseY + (glucoseHeight - deltaHeight) * 0.5,
+        //     Graphics.FONT_TINY,
+        //     loopString,
+        //     Graphics.TEXT_JUSTIFY_RIGHT);
+
+    
+        self.BGGraph.setData({ :value => getGlucose(status), :goal => 220 });
+        self.BGGraph.draw(dc);
     }
 
     function getGlucoseText(status) as String {
@@ -83,6 +108,19 @@ class HeaderDrawable extends WatchUi.Drawable {
 
         } else {
               return "--";
+        }
+
+    }
+
+    function getGlucose(status) as Number {
+
+        if (status instanceof Dictionary)  {
+            var bg = status["glucose"] as String;
+            var bgNumber = (bg == null) ? 40 : bg as Number;
+            return bgNumber;
+
+        } else {
+              return 40;
         }
 
     }

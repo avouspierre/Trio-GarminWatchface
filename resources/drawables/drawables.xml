@@ -1,7 +1,7 @@
 <drawables>
     <bitmap id="LauncherIcon" filename="launcher_40_40.png" />
     <drawable-list id="line1">
-        <shape type="rectangle" x="0" y="40%" width="100%" height="1" color="Graphics.COLOR_LT_GRAY"/>
+        <shape type="rectangle" x="0" y="43%" width="100%" height="1" color="Graphics.COLOR_LT_GRAY"/>
     </drawable-list>
 
     <drawable-list id="line2">
@@ -25,14 +25,14 @@
     </drawable-list>
 
     <drawable-list id="HeartRate">
-        <bitmap id="HR" filename="heart.svg" x="20%" y="65%" scaleY="7%" scaleRelativeTo="screen">
+        <bitmap id="HR" filename="heart.svg" x="20%" y="69%" scaleY="7%" scaleRelativeTo="screen">
             <palette>
                 <color>FF0000</color>
             </palette>
         </bitmap>
     </drawable-list>
     <drawable-list id="StepsIcon">
-        <bitmap id="Steps" filename="steps.svg" x="45%" y="65%" scaleY="15%" scaleRelativeTo="screen">
+        <bitmap id="Steps" filename="steps.svg" x="45%" y="68%" scaleY="15%" scaleRelativeTo="screen">
             <palette>
                 <color>FFFFFF</color>
             </palette>

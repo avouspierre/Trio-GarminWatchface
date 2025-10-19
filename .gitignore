@@ -84,3 +84,4 @@ temp/
 # Local developer configuration
 ConfigOverride.local
 create-build-system.sh
+/dist
